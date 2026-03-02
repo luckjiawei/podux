@@ -1,0 +1,32 @@
+# Runtime-only Dockerfile - uses pre-built binaries from CI
+# Used in the second stage of the CI pipeline (after build:binary)
+FROM alpine:latest
+
+ARG TARGETARCH
+
+RUN apk add --no-cache \
+    ca-certificates \
+    tzdata \
+    && rm -rf /var/cache/apk/*
+
+RUN addgroup -g 1000 frpchub && \
+    adduser -D -u 1000 -G frpchub frpchub
+
+WORKDIR /app
+
+# Copy pre-built binary for target architecture
+COPY dist/frpc-hub-linux-${TARGETARCH} ./frpc-hub
+RUN chmod +x ./frpc-hub
+
+RUN mkdir -p /app/pb_data && \
+    chown -R frpchub:frpchub /app
+
+USER frpchub
+
+EXPOSE 8090
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8090/api/health || exit 1
+
+ENTRYPOINT ["/app/frpc-hub"]
+CMD ["serve", "--http", "0.0.0.0:8090"]

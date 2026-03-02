@@ -1,0 +1,38 @@
+@import "tailwindcss";
+
+/* Status Indicator Dot Animation */
+@keyframes status-blink {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(0.85);
+  }
+}
+
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  animation: status-blink 2s ease-in-out infinite;
+}
+
+.status-dot-green {
+  background-color: var(--green-9);
+  box-shadow: 0 0 8px var(--green-a7);
+}
+
+.status-dot-red {
+  background-color: var(--red-9);
+  box-shadow: 0 0 8px var(--red-a7);
+}
+
+.status-dot-gray {
+  background-color: var(--gray-9);
+  box-shadow: 0 0 8px var(--gray-a7);
+}

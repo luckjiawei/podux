@@ -1,0 +1,66 @@
+.settings-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.settings-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.settings-sidebar {
+  width: 240px;
+  background-color: var(--gray-1);
+  border-right: 1px solid var(--gray-5);
+  padding: 20px 16px;
+}
+
+.settings-nav {
+  border-bottom: none;
+}
+
+.settings-content {
+  flex: 1;
+  padding: 24px 32px;
+  min-height: 500px;
+}
+
+.nav-item {
+  all: unset;
+  box-sizing: border-box !important;
+  user-select: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  width: 100% !important;
+  padding: 10px 12px !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  color: var(--gray-11) !important;
+}
+
+/* Disable default Radix tab indicators/pseudos */
+.nav-item::before,
+.nav-item::after {
+  display: none !important;
+}
+
+.nav-item:hover {
+  background-color: var(--gray-3) !important;
+  /* Reset potential Radix hover bleeds */
+  color: var(--gray-11) !important;
+  box-shadow: none !important;
+  text-decoration: none !important;
+}
+
+.nav-item[data-state="active"] {
+  background-color: var(--accent-3) !important;
+  color: var(--accent-11) !important;
+  font-weight: 500 !important;
+}
+
+.avatar-edit-btn:hover {
+  transform: scale(1.1) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+}

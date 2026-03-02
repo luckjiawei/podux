@@ -1,0 +1,5 @@
+# Minimal .dockerignore for runtime Docker build
+# Only the dist/ directory (pre-built binaries) is needed
+*
+!dist/
+!dist/frpc-hub-linux-*

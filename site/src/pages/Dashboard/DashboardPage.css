@@ -1,0 +1,11 @@
+.recharts-legend-wrapper {
+  outline: none !important;
+}
+
+.recharts-legend-wrapper * {
+  outline: none !important;
+}
+
+.recharts-surface {
+  outline: none !important;
+}
