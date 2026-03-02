@@ -1,0 +1,216 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  GO_VERSION_FILE: go.mod
+  NODE_VERSION: '20'
+  PNPM_VERSION: '10'
+  APP_NAME: frpc-hub
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # ──────────────────────────────────────────────
+  # Job 1: Build React frontend
+  # ──────────────────────────────────────────────
+  build-frontend:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: site/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: site
+
+      - name: Build
+        run: pnpm run build
+        working-directory: site
+
+      - name: Upload frontend dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: site/dist/
+          retention-days: 1
+
+  # ──────────────────────────────────────────────
+  # Job 2: Cross-compile Go binaries (all platforms)
+  # ──────────────────────────────────────────────
+  build-binaries:
+    name: Build ${{ matrix.platform }}
+    needs: build-frontend
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { goos: linux,   goarch: amd64, platform: linux-amd64   }
+          - { goos: linux,   goarch: arm64, platform: linux-arm64   }
+          - { goos: linux,   goarch: arm,   goarm: '7', platform: linux-arm }
+          - { goos: darwin,  goarch: amd64, platform: darwin-amd64  }
+          - { goos: darwin,  goarch: arm64, platform: darwin-arm64  }
+          - { goos: windows, goarch: amd64, platform: windows-amd64 }
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: ${{ env.GO_VERSION_FILE }}
+          cache: true
+
+      - name: Download frontend dist
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: pb_public/
+
+      - name: Build binary
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          GOARM: ${{ matrix.goarm }}
+          CGO_ENABLED: '0'
+          VERSION: ${{ github.ref_name }}
+          BUILD_TIME: ${{ github.event.head_commit.timestamp }}
+        run: |
+          PLATFORM="${{ matrix.platform }}"
+          OUTPUT_DIR="dist/${PLATFORM}"
+          mkdir -p "${OUTPUT_DIR}"
+
+          BINARY="${{ env.APP_NAME }}"
+          [ "$GOOS" = "windows" ] && BINARY="${BINARY}.exe"
+
+          go build \
+            -trimpath \
+            -ldflags "-s -w -X main.Version=${VERSION} -X main.BuildTime=${BUILD_TIME}" \
+            -o "${OUTPUT_DIR}/${BINARY}" \
+            main.go
+
+      - name: Package archive
+        run: |
+          PLATFORM="${{ matrix.platform }}"
+          VERSION="${{ github.ref_name }}"
+          OUTPUT_DIR="dist/${PLATFORM}"
+          ARCHIVE_NAME="${{ env.APP_NAME }}-${VERSION}-${PLATFORM}"
+
+          mkdir -p artifacts
+          cd "${OUTPUT_DIR}"
+
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            zip "../../artifacts/${ARCHIVE_NAME}.zip" "${{ env.APP_NAME }}.exe"
+          else
+            tar -czf "../../artifacts/${ARCHIVE_NAME}.tar.gz" "${{ env.APP_NAME }}"
+          fi
+
+          cd ../..
+          ls -lh artifacts/
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: binary-${{ matrix.platform }}
+          path: artifacts/
+          retention-days: 1
+
+  # ──────────────────────────────────────────────
+  # Job 3: Create GitHub Release
+  # ──────────────────────────────────────────────
+  create-release:
+    name: Create GitHub Release
+    needs: build-binaries
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all binary artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: binary-*
+          merge-multiple: true
+          path: release-assets/
+
+      - name: Generate checksums
+        run: |
+          cd release-assets
+          sha256sum * > checksums.txt
+          cat checksums.txt
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-assets/*
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          fail_on_unmatched_files: true
+
+  # ──────────────────────────────────────────────
+  # Job 4: Build & push multi-arch Docker image
+  # (Dockerfile handles frontend build internally)
+  # ──────────────────────────────────────────────
+  docker:
+    name: Docker (multi-arch)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest,enable=${{ !contains(github.ref_name, '-') }}
+          labels: |
+            org.opencontainers.image.title=frpc-hub
+            org.opencontainers.image.description=FRP client hub with web UI
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ github.ref_name }}
+            BUILD_TIME=${{ github.event.head_commit.timestamp }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

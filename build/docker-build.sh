@@ -104,8 +104,8 @@ else
     FULL_IMAGE_NAME="${IMAGE_NAME}"
 fi
 
-# Navigate to build directory
-cd "$(dirname "$0")"
+# Navigate to project root
+cd "$(dirname "$0")/.."
 
 print_header "Docker Build for ${IMAGE_NAME}"
 print_info "Version: ${VERSION}"
@@ -161,7 +161,7 @@ fi
 
 # Build the image
 print_header "Building Docker Image"
-docker buildx build "${BUILD_ARGS[@]}" ..
+docker buildx build "${BUILD_ARGS[@]}" .
 
 if [ $? -eq 0 ]; then
     print_header "Build Successful!"

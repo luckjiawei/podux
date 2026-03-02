@@ -1,0 +1,59 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# CI/CD
+.github/
+.claude/
+
+# Build output
+build/dist/
+dist/
+*.tar.gz
+*.zip
+frpc-hub
+frpc-hub.exe
+
+# Frontend (built inside Docker)
+site/node_modules/
+site/dist/
+
+# Runtime data
+pb_data/
+pb_public/
+*.db
+*.db-shm
+*.db-wal
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Env
+.env.local
+.env.*.local
+
+# Docs
+*.md
+!README.md
+
+# Test
+*_test.go

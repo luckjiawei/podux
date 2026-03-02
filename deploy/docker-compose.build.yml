@@ -7,7 +7,7 @@ services:
   frpc-hub:
     build:
       context: ..
-      dockerfile: build/Dockerfile
+      dockerfile: Dockerfile
       args:
         VERSION: ${VERSION:-latest}
         BUILD_TIME: ${BUILD_TIME:-$(date -u '+%Y-%m-%d_%H:%M:%S')}
