@@ -1,24 +1,15 @@
 # Multi-stage Dockerfile for frpc-hub
-# Stage 1: Build frontend
-FROM node:20-alpine AS frontend-builder
+# Stage 1: Build frontend (always on native amd64 to avoid QEMU OOM on arm builds)
+FROM --platform=linux/amd64 node:22-alpine AS frontend-builder
 
 WORKDIR /app
 
 # Copy frontend source
-COPY site/package*.json site/pnpm-lock.yaml* ./
-# Install dependencies (try pnpm first, fallback to npm)
-RUN if [ -f pnpm-lock.yaml ]; then \
-        npm install -g pnpm && pnpm install; \
-    else \
-        npm install; \
-    fi
+COPY site/package*.json site/pnpm-lock.yaml ./
+RUN npm install -g pnpm@10 && pnpm install --frozen-lockfile
 
 COPY site/ ./
-RUN if [ -f pnpm-lock.yaml ]; then \
-        pnpm run build; \
-    else \
-        npm run build; \
-    fi
+RUN pnpm run build
 
 # Stage 2: Build backend
 FROM golang:1.25-alpine AS backend-builder
