@@ -1,33 +1,19 @@
 version: '3.8'
 
-# Public image version: use the pre-built Docker image from a registry
-# Usage: docker compose up -d
-
 services:
   frpc-hub:
-    image: ${REGISTRY:-ghcr.io/your-username}/frpc-hub:${VERSION:-latest}
+    image: ghcr.io/luckjiawei/frpc-hub:${VERSION:-latest}
     container_name: frpc-hub
     restart: unless-stopped
 
     ports:
-      # Web UI and API
       - "8090:8090"
-      # Add your frpc proxy ports here
-      # Example:
-      # - "7000:7000"  # frps server port
-      # - "7500:7500"  # frps dashboard port
 
     volumes:
-      # Persistent data storage
       - frpc-hub-data:/app/pb_data
-      # Optional: Mount custom frpc configurations
-      # - ./frpc-configs:/app/frpc-configs
 
     environment:
-      # Timezone
       - TZ=Asia/Shanghai
-      # Optional: Custom PocketBase settings
-      # - PB_ENCRYPTION_KEY=your-encryption-key
 
     # Resource limits (optional)
     deploy:
