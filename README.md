@@ -19,9 +19,9 @@
     <br /><br />
     <a href="https://frpchub.jwinks.com/"><strong>📖 Documentation</strong></a>
     &nbsp;&nbsp;·&nbsp;&nbsp;
-    <a href="https://github.com/luckjiawei/frpc-hub/issues">Report Bug</a>
+    <a href="https://github.com/luckjiawei/frpc-hub/issues">🐛 Report Bug</a>
     &nbsp;&nbsp;·&nbsp;&nbsp;
-    <a href="https://github.com/luckjiawei/frpc-hub/issues">Request Feature</a>
+    <a href="https://github.com/luckjiawei/frpc-hub/issues">✨ Request Feature</a>
   </p>
 
 </div>
