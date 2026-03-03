@@ -24,10 +24,10 @@ function useIsMobile() {
     navigator.userAgent,
   );
 
-  const [isSmall, setIsSmall] = useState(() => window.matchMedia("(max-width: 639px)").matches);
+  const [isSmall, setIsSmall] = useState(() => window.matchMedia("(max-width: 760px)").matches);
 
   useEffect(() => {
-    const mq = window.matchMedia("(max-width: 639px)");
+    const mq = window.matchMedia("(max-width: 760px)");
     const handler = (e: MediaQueryListEvent) => setIsSmall(e.matches);
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
