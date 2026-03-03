@@ -15,17 +15,20 @@
 <h3 align="center">Frpc-Hub</h3>
 
   <p align="center">
-    🎉 Cross-platform desktop client for FRP, visual configuration, easily achieve intranet penetration!
-    <br />
-    Support all frp versions / Auto-start / Visual configuration / Free and open source
+    Self-hosted web panel for managing multiple frpc instances — no terminal required.
+    <br /><br />
+    <a href="https://frpchub.jwinks.com/"><strong>📖 Documentation</strong></a>
+    &nbsp;&nbsp;·&nbsp;&nbsp;
+    <a href="https://github.com/luckjiawei/frpc-hub/issues">Report Bug</a>
+    &nbsp;&nbsp;·&nbsp;&nbsp;
+    <a href="https://github.com/luckjiawei/frpc-hub/issues">Request Feature</a>
   </p>
 
 </div>
 
 ## Milestones
 
-- 2026-02-28: Released v0.0.1
-
+- 2026-02-28: Released v0.1.0
 
 ## Star History
 
@@ -47,4 +50,4 @@
 
 [license-shield]: https://img.shields.io/github/license/luckjiawei/frpc-hub.svg?style=for-the-badge
 
-[license-url]: https://github.com/luckjiawei/frpc-hub/blob/master/LICENSE
+[license-url]: https://github.com/luckjiawei/frpc-hub/blob/main/LICENSE
