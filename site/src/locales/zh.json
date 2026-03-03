@@ -34,6 +34,7 @@
     "proxies": "代理",
     "settings": "设置",
     "logout": "退出登录",
+    "pbAdmin": "后台管理",
     "version": "版本",
     "import": "导入"
   },

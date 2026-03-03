@@ -303,6 +303,9 @@ export function MainLayout({ children }: MainLayoutProps) {
                   <DropdownMenu.Item onClick={handleGotoProfile}>
                     <Icon icon="lucide:user" width="16" height="16" /> {t("settings.profile")}
                   </DropdownMenu.Item>
+                  <DropdownMenu.Item onClick={() => window.open("/_/", "_blank", "noopener,noreferrer")}>
+                    <Icon icon="lucide:database" width="16" height="16" /> {t("nav.pbAdmin")}
+                  </DropdownMenu.Item>
                   <DropdownMenu.Separator />
                   <DropdownMenu.Item color="red" onClick={handleLogout}>
                     <Icon icon="lucide:log-out" width="16" height="16" /> {t("nav.logout")}
