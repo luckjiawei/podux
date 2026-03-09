@@ -47,6 +47,14 @@ export function ProxiesView({
   const navigate = useNavigate();
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopy = (text: string, id: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 1500);
+    });
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => setMounted(true), 100);
@@ -61,6 +69,7 @@ export function ProxiesView({
       localIP: data.localIp,
       localPort: data.localPort,
       remotePort: data.remotePort,
+      subdomain: data.subdomain,
       customDomains: data.customDomains ? data.customDomains.split(",").map((d) => d.trim()) : [],
       transport: {
         use_encryption: data.encryption,
@@ -85,6 +94,7 @@ export function ProxiesView({
         localIp: (editingProxy as any).localIP || "127.0.0.1",
         localPort: String(editingProxy.localPort || ""),
         remotePort: String(editingProxy.remotePort || ""),
+        subdomain: (editingProxy as any).subdomain || "",
         customDomains: (editingProxy as any).customDomains?.join(", ") || "",
         encryption: (editingProxy as any).transport?.use_encryption || false,
         compression: (editingProxy as any).transport?.use_compression || false,
@@ -250,11 +260,63 @@ export function ProxiesView({
                       </Table.Cell>
                       <Table.Cell>{proxy.localPort}</Table.Cell>
                       <Table.Cell>
-                        {proxy.proxyType === "http" || proxy.proxyType === "https"
-                          ? (proxy as any).customDomains?.length > 0
-                            ? (proxy as any).customDomains.join(", ")
-                            : (proxy as any).subdomain || "-"
-                          : proxy.remotePort || "-"}
+                        {(() => {
+                          const p = proxy as any;
+                          if (proxy.proxyType === "http" || proxy.proxyType === "https") {
+                            const serverAddr = p.expand?.serverId?.serverAddr || "";
+                            const items: string[] = [];
+                            if (p.subdomain) items.push(`${p.subdomain}.${serverAddr}`);
+                            if (p.customDomains?.length > 0) items.push(...p.customDomains);
+                            if (items.length === 0) return <Text size="2" color="gray">-</Text>;
+                            return (
+                              <Flex direction="column" gap="1">
+                                {items.map((domain: string, i: number) => {
+                                  const copyKey = `${proxy.id}-domain-${i}`;
+                                  const isCopied = copiedId === copyKey;
+                                  return (
+                                    <Flex
+                                      key={i}
+                                      align="center"
+                                      gap="1"
+                                      style={{ cursor: "pointer" }}
+                                      onClick={() => handleCopy(domain, copyKey)}
+                                      title={isCopied ? t("common.copied") : t("common.clickToCopy")}
+                                    >
+                                      <Text size="2">{domain}</Text>
+                                      <Icon
+                                        icon={isCopied ? "lucide:check" : "lucide:copy"}
+                                        width="12"
+                                        height="12"
+                                        color={isCopied ? "var(--green-9)" : "var(--gray-8)"}
+                                      />
+                                    </Flex>
+                                  );
+                                })}
+                              </Flex>
+                            );
+                          }
+                          const displayText = proxy.remotePort || "-";
+                          if (displayText === "-") return <Text size="2" color="gray">-</Text>;
+                          const copyKey = `${proxy.id}-port`;
+                          const isCopied = copiedId === copyKey;
+                          return (
+                            <Flex
+                              align="center"
+                              gap="1"
+                              style={{ cursor: "pointer" }}
+                              onClick={() => handleCopy(displayText, copyKey)}
+                              title={isCopied ? t("common.copied") : t("common.clickToCopy")}
+                            >
+                              <Text size="2">{displayText}</Text>
+                              <Icon
+                                icon={isCopied ? "lucide:check" : "lucide:copy"}
+                                width="12"
+                                height="12"
+                                color={isCopied ? "var(--green-9)" : "var(--gray-8)"}
+                              />
+                            </Flex>
+                          );
+                        })()}
                       </Table.Cell>
                       <Table.Cell>
                         <Badge

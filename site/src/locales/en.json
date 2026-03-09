@@ -1,5 +1,7 @@
 {
   "common": {
+    "clickToCopy": "Click to copy",
+    "copied": "Copied!",
     "confirm": "Confirm",
     "cancel": "Cancel",
     "save": "Save",
