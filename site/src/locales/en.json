@@ -1,5 +1,6 @@
 {
   "common": {
+    "onThisPage": "On this page",
     "clickToCopy": "Click to copy",
     "copied": "Copied!",
     "confirm": "Confirm",
@@ -288,6 +289,9 @@
     "bandwidthLimitPlaceholder": "1MB",
     "basicConfig": "Basic Config",
     "advancedOptions": "Advanced Options",
+    "sectionBasic": "Basic Info",
+    "sectionNetwork": "Network Config",
+    "sectionTransport": "Transport Options",
     "transportEncryption": "Transport Encryption",
     "transportEncryptionDesc": "Enable to encrypt data during transport",
     "dataCompression": "Data Compression",

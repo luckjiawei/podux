@@ -23,6 +23,9 @@ const ServerDetailPage = lazy(() =>
   import("./pages/ServerDetail").then((m) => ({ default: m.ServerDetailPage }))
 );
 const ImportPage = lazy(() => import("./pages/Import").then((m) => ({ default: m.ImportPage })));
+const ProxyFormPage = lazy(() =>
+  import("./pages/Proxies/ProxyFormPage").then((m) => ({ default: m.ProxyFormPage }))
+);
 
 function AuthenticatedLayout() {
   console.log("AuthenticatedLayout rendered");
@@ -59,6 +62,8 @@ function App() {
           <Route element={<AuthenticatedLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/proxies" element={<ProxiesPage />} />
+            <Route path="/proxies/new" element={<ProxyFormPage />} />
+            <Route path="/proxies/:id/edit" element={<ProxyFormPage />} />
             <Route path="/servers" element={<ServersPage />} />
             <Route path="/servers/:id" element={<ServerDetailPage />} />
             <Route path="/settings" element={<SettingsPage />} />

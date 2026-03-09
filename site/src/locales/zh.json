@@ -1,5 +1,6 @@
 {
   "common": {
+    "onThisPage": "本页内容",
     "clickToCopy": "点击复制",
     "copied": "已复制！",
     "confirm": "确认",
@@ -288,6 +289,9 @@
     "bandwidthLimitPlaceholder": "1MB",
     "basicConfig": "基础配置",
     "advancedOptions": "高级选项",
+    "sectionBasic": "基本信息",
+    "sectionNetwork": "网络配置",
+    "sectionTransport": "传输选项",
     "transportEncryption": "传输加密",
     "transportEncryptionDesc": "启用以在传输过程中加密数据",
     "dataCompression": "数据压缩",
