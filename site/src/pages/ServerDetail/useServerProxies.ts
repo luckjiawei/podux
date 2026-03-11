@@ -7,10 +7,12 @@ import type { Proxy } from "../Proxies/useProxies";
 export function useServerProxies(serverId: string | undefined) {
   const [proxies, setProxies] = useState<Proxy[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
 
-  const fetchProxies = useCallback(async () => {
+  const fetchProxies = useCallback(async (isManual = false) => {
     if (!serverId) return;
+    if (isManual) setRefreshing(true);
     try {
       const result = await pb.collection("fh_proxies").getFullList<Proxy>({
         filter: `serverId = "${serverId}"`,
@@ -22,6 +24,7 @@ export function useServerProxies(serverId: string | undefined) {
       toast.error(err instanceof Error ? err.message : "Failed to fetch proxies");
     } finally {
       setLoading(false);
+      if (isManual) setRefreshing(false);
     }
   }, [serverId]);
 
@@ -66,5 +69,5 @@ export function useServerProxies(serverId: string | undefined) {
     }
   };
 
-  return { proxies, loading, togglingId, toggleStatus, deleteProxy, refresh: fetchProxies };
+  return { proxies, loading, refreshing, togglingId, toggleStatus, deleteProxy, refresh: () => fetchProxies(true) };
 }

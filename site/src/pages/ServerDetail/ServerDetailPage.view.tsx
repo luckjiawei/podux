@@ -25,7 +25,7 @@ export function ServerDetailPage() {
   const [mounted, setMounted] = useState(false);
   const [deleteProxyId, setDeleteProxyId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const { proxies, togglingId, toggleStatus, deleteProxy } = useServerProxies(id);
+  const { proxies, togglingId, toggleStatus, deleteProxy, refreshing, refresh } = useServerProxies(id);
 
   const handleCopy = (text: string, key: string) => {
     navigator.clipboard.writeText(text).then(() => {
@@ -310,10 +310,21 @@ export function ServerDetailPage() {
         <Card size="3">
           <Flex justify="between" align="center" mb="4">
             <Heading size="4">{t("proxy.title")}</Heading>
-            <Button size="1" onClick={() => navigate(`/proxies/new?serverId=${id}`)}>
-              <Icon icon="lucide:plus" width="14" height="14" />
-              {t("proxy.addProxy")}
-            </Button>
+            <Flex gap="2">
+              <Button size="1" variant="soft" onClick={refresh} disabled={refreshing}>
+                <Icon
+                  icon="lucide:refresh-cw"
+                  width="14"
+                  height="14"
+                  className={refreshing ? "animate-spin" : ""}
+                />
+                {t("proxy.refresh")}
+              </Button>
+              <Button size="1" onClick={() => navigate(`/proxies/new?serverId=${id}`)}>
+                <Icon icon="lucide:plus" width="14" height="14" />
+                {t("proxy.addProxy")}
+              </Button>
+            </Flex>
           </Flex>
 
           {proxies.length === 0 ? (
