@@ -363,7 +363,8 @@ func (fs *Service) monitorProxyStatus(serverId *string, svr *client.Service, ctx
 					}
 					fs.proxyRepo.UpdateBootStatus(proxy.Id, bootStatus)
 				} else {
-					fs.app.Logger().Debug("Proxy not found in frp status", "serverId", *serverId, "proxyId", proxy.Id, "proxyName", proxyName)
+					// Proxy is not in frp (disabled or removed) — mark as offline
+					fs.proxyRepo.UpdateBootStatus(proxy.Id, proxydomain.ProxyBootStatusOffline)
 				}
 			}
 		}
