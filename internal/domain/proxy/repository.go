@@ -9,4 +9,5 @@ type Repository interface {
 	UpdateBootStatusByServerID(serverID string, status ProxyBootStatus) error
 	ResetAllBootStatus() error
 	FindByServerID(serverID string) ([]Proxy, error)
+	FindEnabledByServerID(serverID string) ([]Proxy, error)
 }

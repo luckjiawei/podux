@@ -151,3 +151,23 @@ func (r *ProxyRepository) FindByServerID(serverID string) ([]proxy.Proxy, error)
 
 	return proxies, nil
 }
+
+func (r *ProxyRepository) FindEnabledByServerID(serverID string) ([]proxy.Proxy, error) {
+	var proxies []proxy.Proxy
+	err := r.app.DB().
+		Select("fh_proxies.*").
+		From("fh_proxies").
+		Where(dbx.And(
+			dbx.HashExp{"serverId": serverID},
+			dbx.HashExp{"status": string(proxy.ProxyStatusEnabled)},
+		)).
+		All(&proxies)
+
+	if err != nil {
+		r.app.Logger().Error("Failed to find enabled proxies by server id", "serverID", serverID, "error", err)
+		return nil, err
+	}
+
+	return proxies, nil
+}
+

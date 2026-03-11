@@ -84,4 +84,29 @@ func (h *FrpcHandler) RegisterHandlers(e *core.ServeEvent) {
 		}
 		return e.JSON(200, map[string]string{"message": "frpc terminated"})
 	}))
+
+	e.Router.POST("/api/frpc/reload", requireAuth(func(e *core.RequestEvent) error {
+		data := struct {
+			ID string `json:"id"`
+		}{}
+		if err := e.BindBody(&data); err != nil {
+			return e.JSON(400, map[string]string{"error": "invalid request body"})
+		}
+		id := data.ID
+		if id == "" {
+			return e.JSON(400, map[string]string{"error": "id is required"})
+		}
+		if !validID.MatchString(id) {
+			return e.JSON(400, map[string]string{"error": "invalid id format"})
+		}
+		// Only reload if the server is currently running
+		if !h.service.IsServerRunning(id) {
+			return e.JSON(200, map[string]string{"message": "server not running, skipped"})
+		}
+		err := h.service.ReloadFrpc(&id)
+		if err != nil {
+			return e.JSON(500, map[string]string{"error": err.Error()})
+		}
+		return e.JSON(200, map[string]string{"message": "frpc reloaded"})
+	}))
 }

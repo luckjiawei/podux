@@ -145,7 +145,7 @@ func (fs *Service) genCommonCfgs(id *string) (*v1.ClientCommonConfig, error) {
 }
 
 func (fs *Service) genProxyCfgs(serverId *string) ([]v1.ProxyConfigurer, error) {
-	proxies, err := fs.proxyRepo.FindByServerID(*serverId)
+	proxies, err := fs.proxyRepo.FindEnabledByServerID(*serverId)
 	if err != nil {
 		fs.app.Logger().Error("genProxyCfgs", "err", err)
 		return nil, err

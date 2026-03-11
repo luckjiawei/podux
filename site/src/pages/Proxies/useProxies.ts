@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import pb from "../../lib/pocketbase";
+import { apiPost } from "../../lib/api";
 import { toast } from "sonner";
 
 export interface Proxy {
@@ -67,10 +68,15 @@ export function useProxies() {
   }, [fetchProxies]);
 
   const deleteProxy = async (id: string) => {
+    const proxy = proxies.find((p) => p.id === id);
     try {
       await pb.collection("fh_proxies").delete(id);
       await fetchProxies();
       toast.success("Proxy deleted successfully");
+      // Reload frp config if we know which server this proxy belonged to
+      if (proxy?.serverId) {
+        await apiPost("/api/frpc/reload", { id: proxy.serverId });
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to delete proxy");
     }
@@ -84,6 +90,8 @@ export function useProxies() {
     );
     try {
       await pb.collection("fh_proxies").update(proxy.id, { status: newStatus });
+      // Reload frp config so the change takes effect immediately
+      await apiPost("/api/frpc/reload", { id: proxy.serverId });
     } catch (err) {
       // Rollback on failure
       setProxies((prev) =>
