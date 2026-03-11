@@ -19,6 +19,7 @@ interface ProxiesViewProps {
     offline: number;
   };
   onDeleteProxy: (id: string) => Promise<void>;
+  onToggleStatus: (proxy: Proxy) => Promise<void>;
   refreshProxies: () => void;
 }
 
@@ -28,6 +29,7 @@ export function ProxiesView({
   refreshing,
   stats,
   onDeleteProxy,
+  onToggleStatus,
   refreshProxies,
 }: ProxiesViewProps) {
   const { t } = useTranslation();
@@ -35,6 +37,7 @@ export function ProxiesView({
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text).then(() => {
@@ -318,9 +321,37 @@ export function ProxiesView({
                           </Badge>
                         </Table.Cell>
                         <Table.Cell>
-                          <Badge color={proxy.status === "enabled" ? "green" : "red"}>
-                            {proxy.status === "enabled" ? t("proxy.enabled") : t("proxy.disabled")}
-                          </Badge>
+                          <button
+                            onClick={async () => {
+                              if (togglingId === proxy.id) return;
+                              setTogglingId(proxy.id);
+                              await onToggleStatus(proxy);
+                              setTogglingId(null);
+                            }}
+                            disabled={togglingId === proxy.id}
+                            style={{
+                              cursor: togglingId === proxy.id ? "not-allowed" : "pointer",
+                              background: "none",
+                              border: "none",
+                              padding: 0,
+                              opacity: togglingId === proxy.id ? 0.6 : 1,
+                              transition: "opacity 0.2s",
+                            }}
+                            title={proxy.status === "enabled" ? t("proxy.clickToDisable") : t("proxy.clickToEnable")}
+                          >
+                            <Badge color={proxy.status === "enabled" ? "green" : "gray"} style={{ cursor: "inherit" }}>
+                              {togglingId === proxy.id ? (
+                                <Icon icon="lucide:loader-2" width="12" height="12" className="animate-spin" />
+                              ) : (
+                                <Icon
+                                  icon={proxy.status === "enabled" ? "lucide:power" : "lucide:power-off"}
+                                  width="12"
+                                  height="12"
+                                />
+                              )}
+                              {proxy.status === "enabled" ? t("proxy.enabled") : t("proxy.disabled")}
+                            </Badge>
+                          </button>
                         </Table.Cell>
                         <Table.Cell>
                           <Flex gap="2">

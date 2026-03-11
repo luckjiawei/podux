@@ -76,6 +76,23 @@ export function useProxies() {
     }
   };
 
+  const toggleStatus = async (proxy: Proxy) => {
+    const newStatus = proxy.status === "enabled" ? "disabled" : "enabled";
+    // Optimistic update
+    setProxies((prev) =>
+      prev.map((p) => (p.id === proxy.id ? { ...p, status: newStatus } : p))
+    );
+    try {
+      await pb.collection("fh_proxies").update(proxy.id, { status: newStatus });
+    } catch (err) {
+      // Rollback on failure
+      setProxies((prev) =>
+        prev.map((p) => (p.id === proxy.id ? { ...p, status: proxy.status } : p))
+      );
+      toast.error(err instanceof Error ? err.message : "Failed to update proxy status");
+    }
+  };
+
   const stats = {
     total: proxies.length,
     online: proxies.filter((p) => p.bootStatus === "online").length,
@@ -90,6 +107,7 @@ export function useProxies() {
     refreshing,
     isEmpty,
     deleteProxy,
+    toggleStatus,
     page,
     setPage,
     totalPages,

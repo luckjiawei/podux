@@ -314,6 +314,8 @@
     "saveChanges": "保存更改",
     "enabled": "已启用",
     "disabled": "已禁用",
+    "clickToEnable": "点击启用",
+    "clickToDisable": "点击停用",
     "errorInvalidName": "无效的名称（使用字母数字、- 或 _）",
     "errorInvalidIP": "无效的 IP 或主机名",
     "errorInvalidPort": "无效的端口（1-65535）",

@@ -314,6 +314,8 @@
     "saveChanges": "Save Changes",
     "enabled": "Enabled",
     "disabled": "Disabled",
+    "clickToEnable": "Click to enable",
+    "clickToDisable": "Click to disable",
     "errorInvalidName": "Invalid name (use alphanumeric, - or _)",
     "errorInvalidIP": "Invalid IP or hostname",
     "errorInvalidPort": "Invalid port (1-65535)",
