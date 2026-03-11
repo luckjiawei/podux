@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Card, Flex, Text, Badge, Grid, Button, Heading, Box } from "@radix-ui/themes";
+import { Card, Flex, Text, Badge, Grid, Button, Heading, Box, Table, AlertDialog } from "@radix-ui/themes";
 import { Icon } from "@iconify/react";
 import { PageHeader } from "../../components/PageHeader";
 import { Loading } from "../../components/Loading";
@@ -11,6 +11,7 @@ import { motion } from "framer-motion";
 import { ServerLatency } from "../../components/ServerLatency";
 import { ServerLocation } from "../../components/ServerLocation";
 import { useTranslation } from "react-i18next";
+import { useServerProxies } from "./useServerProxies";
 
 export function ServerDetailPage() {
   const { t } = useTranslation();
@@ -22,6 +23,16 @@ export function ServerDetailPage() {
   const [logs, setLogs] = useState<string[]>([]);
   const logContainerRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
+  const [deleteProxyId, setDeleteProxyId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const { proxies, togglingId, toggleStatus, deleteProxy } = useServerProxies(id);
+
+  const handleCopy = (text: string, key: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedId(key);
+      setTimeout(() => setCopiedId(null), 1500);
+    });
+  };
 
   useEffect(() => {
     // Wait for PageTransition to complete before triggering animations
@@ -290,6 +301,163 @@ export function ServerDetailPage() {
         </motion.div>
       </Grid>
 
+      {/* Proxy List */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={mounted ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+        transition={{ duration: 0.5, delay: 0.3, ease: "easeOut" }}
+      >
+        <Card size="3">
+          <Flex justify="between" align="center" mb="4">
+            <Heading size="4">{t("proxy.title")}</Heading>
+            <Button size="1" onClick={() => navigate(`/proxies/new?serverId=${id}`)}>
+              <Icon icon="lucide:plus" width="14" height="14" />
+              {t("proxy.addProxy")}
+            </Button>
+          </Flex>
+
+          {proxies.length === 0 ? (
+            <Flex direction="column" align="center" gap="2" py="6">
+              <Icon icon="lucide:network" width="32" height="32" color="var(--gray-8)" />
+              <Text size="2" color="gray">{t("proxy.noProxies")}</Text>
+            </Flex>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table.Root>
+                <Table.Header>
+                  <Table.Row>
+                    <Table.ColumnHeaderCell>{t("common.name")}</Table.ColumnHeaderCell>
+                    <Table.ColumnHeaderCell>{t("common.type")}</Table.ColumnHeaderCell>
+                    <Table.ColumnHeaderCell>{t("proxy.localIP")}</Table.ColumnHeaderCell>
+                    <Table.ColumnHeaderCell>{t("proxy.localPort")}</Table.ColumnHeaderCell>
+                    <Table.ColumnHeaderCell>{t("proxy.remotePortOrDomain")}</Table.ColumnHeaderCell>
+                    <Table.ColumnHeaderCell>{t("proxy.bootStatus")}</Table.ColumnHeaderCell>
+                    <Table.ColumnHeaderCell>{t("common.status")}</Table.ColumnHeaderCell>
+                    <Table.ColumnHeaderCell>{t("common.actions")}</Table.ColumnHeaderCell>
+                  </Table.Row>
+                </Table.Header>
+                <Table.Body>
+                  {proxies.map((proxy) => (
+                    <Table.Row key={proxy.id}>
+                      <Table.Cell>
+                        <Text weight="medium">{proxy.name || <Text color="gray">-</Text>}</Text>
+                      </Table.Cell>
+                      <Table.Cell>
+                        <Badge variant="surface">{proxy.proxyType.toUpperCase()}</Badge>
+                      </Table.Cell>
+                      <Table.Cell>
+                        {(() => {
+                          const ip = proxy.localIP || "127.0.0.1";
+                          const copyKey = `${proxy.id}-localIP`;
+                          const isCopied = copiedId === copyKey;
+                          return (
+                            <Flex align="center" gap="1" style={{ cursor: "pointer" }}
+                              onClick={() => handleCopy(ip, copyKey)}
+                              title={isCopied ? t("common.copied") : t("common.clickToCopy")}>
+                              <Text size="2" color="gray">{ip}</Text>
+                              <Icon icon={isCopied ? "lucide:check" : "lucide:copy"} width="12" height="12"
+                                color={isCopied ? "var(--green-9)" : "var(--gray-8)"} />
+                            </Flex>
+                          );
+                        })()}
+                      </Table.Cell>
+                      <Table.Cell>
+                        {proxy.localPort ? (() => {
+                          const copyKey = `${proxy.id}-localPort`;
+                          const isCopied = copiedId === copyKey;
+                          return (
+                            <Flex align="center" gap="1" style={{ cursor: "pointer" }}
+                              onClick={() => handleCopy(String(proxy.localPort), copyKey)}
+                              title={isCopied ? t("common.copied") : t("common.clickToCopy")}>
+                              <Text size="2">{proxy.localPort}</Text>
+                              <Icon icon={isCopied ? "lucide:check" : "lucide:copy"} width="12" height="12"
+                                color={isCopied ? "var(--green-9)" : "var(--gray-8)"} />
+                            </Flex>
+                          );
+                        })() : <Text size="2" color="gray">-</Text>}
+                      </Table.Cell>
+                      <Table.Cell>
+                        {(() => {
+                          if (proxy.proxyType === "http" || proxy.proxyType === "https") {
+                            const items: string[] = [];
+                            if (proxy.subdomain && server?.serverAddr) items.push(`${proxy.subdomain}.${server.serverAddr}`);
+                            if (proxy.customDomains?.length) items.push(...proxy.customDomains);
+                            if (items.length === 0) return <Text size="2" color="gray">-</Text>;
+                            return (
+                              <Flex direction="column" gap="1">
+                                {items.map((domain, i) => {
+                                  const copyKey = `${proxy.id}-domain-${i}`;
+                                  const isCopied = copiedId === copyKey;
+                                  return (
+                                    <Flex key={i} align="center" gap="1" style={{ cursor: "pointer" }}
+                                      onClick={() => handleCopy(domain, copyKey)}
+                                      title={isCopied ? t("common.copied") : t("common.clickToCopy")}>
+                                      <Text size="2">{domain}</Text>
+                                      <Icon icon={isCopied ? "lucide:check" : "lucide:copy"} width="12" height="12"
+                                        color={isCopied ? "var(--green-9)" : "var(--gray-8)"} />
+                                    </Flex>
+                                  );
+                                })}
+                              </Flex>
+                            );
+                          }
+                          const displayText = proxy.remotePort || "-";
+                          if (displayText === "-") return <Text size="2" color="gray">-</Text>;
+                          const copyKey = `${proxy.id}-port`;
+                          const isCopied = copiedId === copyKey;
+                          return (
+                            <Flex align="center" gap="1" style={{ cursor: "pointer" }}
+                              onClick={() => handleCopy(displayText, copyKey)}
+                              title={isCopied ? t("common.copied") : t("common.clickToCopy")}>
+                              <Text size="2">{displayText}</Text>
+                              <Icon icon={isCopied ? "lucide:check" : "lucide:copy"} width="12" height="12"
+                                color={isCopied ? "var(--green-9)" : "var(--gray-8)"} />
+                            </Flex>
+                          );
+                        })()}
+                      </Table.Cell>
+                      <Table.Cell>
+                        <Badge radius="full" color={proxy.bootStatus === "online" ? "green" : "red"}>
+                          <span className={`status-dot ${proxy.bootStatus === "online" ? "status-dot-green" : "status-dot-red"}`} />
+                          {proxy.bootStatus === "online" ? t("proxy.online") : t("proxy.offline")}
+                        </Badge>
+                      </Table.Cell>
+                      <Table.Cell>
+                        <button
+                          onClick={() => toggleStatus(proxy)}
+                          disabled={togglingId === proxy.id}
+                          style={{ cursor: togglingId === proxy.id ? "not-allowed" : "pointer", background: "none", border: "none", padding: 0, opacity: togglingId === proxy.id ? 0.6 : 1, transition: "opacity 0.2s" }}
+                          title={proxy.status === "enabled" ? t("proxy.clickToDisable") : t("proxy.clickToEnable")}
+                        >
+                          <Badge color={proxy.status === "enabled" ? "green" : "gray"} style={{ cursor: "inherit" }}>
+                            {togglingId === proxy.id
+                              ? <Icon icon="lucide:loader-2" width="12" height="12" className="animate-spin" />
+                              : <Icon icon={proxy.status === "enabled" ? "lucide:power" : "lucide:power-off"} width="12" height="12" />}
+                            {proxy.status === "enabled" ? t("proxy.enabled") : t("proxy.disabled")}
+                          </Badge>
+                        </button>
+                      </Table.Cell>
+                      <Table.Cell>
+                        <Flex gap="2">
+                          <Button size="1" variant="soft" onClick={() => navigate(`/proxies/${proxy.id}/edit`)}>
+                            <Icon icon="lucide:pencil" width="14" height="14" />
+                            {t("common.edit")}
+                          </Button>
+                          <Button size="1" variant="soft" color="red" onClick={() => setDeleteProxyId(proxy.id)}>
+                            <Icon icon="lucide:trash-2" width="14" height="14" />
+                            {t("common.delete")}
+                          </Button>
+                        </Flex>
+                      </Table.Cell>
+                    </Table.Row>
+                  ))}
+                </Table.Body>
+              </Table.Root>
+            </div>
+          )}
+        </Card>
+      </motion.div>
+
       {/* Logs Section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -333,6 +501,39 @@ export function ServerDetailPage() {
           </Box>
         </Card>
       </motion.div>
+
+      {/* Proxy Delete Confirmation */}
+      <AlertDialog.Root open={!!deleteProxyId} onOpenChange={() => setDeleteProxyId(null)}>
+        <AlertDialog.Content maxWidth="450px">
+          <AlertDialog.Title>{t("proxy.confirmDeletion")}</AlertDialog.Title>
+          <AlertDialog.Description size="2">
+            {t("proxy.deleteConfirmMessage")}
+          </AlertDialog.Description>
+          <Flex gap="3" mt="4" justify="end">
+            <AlertDialog.Cancel>
+              <Button variant="soft" color="gray">
+                <Icon icon="lucide:x" width="16" height="16" />
+                {t("common.cancel")}
+              </Button>
+            </AlertDialog.Cancel>
+            <AlertDialog.Action>
+              <Button
+                variant="solid"
+                color="red"
+                onClick={() => {
+                  if (deleteProxyId) {
+                    deleteProxy(deleteProxyId);
+                    setDeleteProxyId(null);
+                  }
+                }}
+              >
+                <Icon icon="lucide:trash-2" width="16" height="16" />
+                {t("common.delete")}
+              </Button>
+            </AlertDialog.Action>
+          </Flex>
+        </AlertDialog.Content>
+      </AlertDialog.Root>
     </Flex>
   );
 }
