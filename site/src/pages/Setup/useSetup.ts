@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { useSystemStore } from "../../stores/systemStore";
+import { apiPost } from "../../lib/api";
 
 export function useSetup() {
   const { t, i18n } = useTranslation();
@@ -76,16 +77,10 @@ export function useSetup() {
 
     try {
       // Call backend API to initialize system (creates admin user and settings in transaction)
-      const response = await fetch("/api/system/initialize", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: email,
-          password: password,
-          language: language,
-        }),
+      const response = await apiPost("/api/system/initialize", {
+        email: email,
+        password: password,
+        language: language,
       });
 
       const data = await response.json();

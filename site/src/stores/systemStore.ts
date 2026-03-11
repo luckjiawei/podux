@@ -29,7 +29,7 @@ export const useSystemStore = create<SystemStore>()(
       checkInitialized: async () => {
         set({ isLoading: true, error: null });
         try {
-          const response = await fetch("/api/system/initialized");
+          const response = await apiGet("/api/system/initialized");
           const data = await response.json();
 
           if (!response.ok) {
