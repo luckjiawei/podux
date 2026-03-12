@@ -8,7 +8,7 @@
 [![Apache License][license-shield]][license-url]
 
 <div align="right">
-  <b>English</b> | <a href="README_zh.md">简体中文</a>
+  <a href="README.md">English</a> | <b>简体中文</b>
 </div>
 
 <!-- PROJECT LOGO -->
@@ -21,41 +21,41 @@
 <h3 align="center">Frpc-Hub</h3>
 
   <p align="center">
-    <strong>Frpc-Hub</strong> is the web UI frpc always needed.
+    <strong>Frpc-Hub</strong> —— frpc 梦寐以求的 Web 前端管理面板。
     <br />
-    Manage all your clients, proxies, and connections from one place. No terminal. No config editing.
+    在一个地方集中管理您所有的客户端、代理和连接。告别终端。无需再手动编辑配置文件。
     <br /><br />
-    <a href="https://frpchub.jwinks.com/"><strong>📖 Documentation</strong></a>
+    <a href="https://frpchub.jwinks.com/"><strong>📖 官方文档</strong></a>
     &nbsp;&nbsp;·&nbsp;&nbsp;
-    <a href="https://github.com/luckjiawei/frpc-hub/issues">🐛 Report Bug</a>
+    <a href="https://github.com/luckjiawei/frpc-hub/issues">🐛 提交 Bug</a>
     &nbsp;&nbsp;·&nbsp;&nbsp;
-    <a href="https://github.com/luckjiawei/frpc-hub/issues">✨ Request Feature</a>
+    <a href="https://github.com/luckjiawei/frpc-hub/issues">✨ 需求建议</a>
   </p>
 
   <br />
 
   <p align="center">
-    <strong>✅ Multi-server management</strong> &nbsp;·&nbsp;
-    <strong>📊 Real-time dashboard</strong> &nbsp;·&nbsp;
-    <strong>🌐 Network monitoring</strong> &nbsp;·&nbsp;
-    <strong>🚀 One-click auto-start</strong> &nbsp;·&nbsp;
-    <strong>⚡ High performance</strong> &nbsp;·&nbsp;
-    <strong>🐳 Docker ready</strong> &nbsp;·&nbsp;
-    <strong>🎨 Modern UI</strong> &nbsp;·&nbsp;
+    <strong>✅ 多节点管理</strong> &nbsp;·&nbsp;
+    <strong>📊 实时数据大盘</strong> &nbsp;·&nbsp;
+    <strong>🌐 网络监控</strong> &nbsp;·&nbsp;
+    <strong>🚀 一键开机自启</strong> &nbsp;·&nbsp;
+    <strong>⚡ 高性能稳定</strong> &nbsp;·&nbsp;
+    <strong>🐳 完美适配 Docker</strong> &nbsp;·&nbsp;
+    <strong>🎨 现代化 UI 设计</strong> &nbsp;·&nbsp;
   </p>
 
 </div>
 
-## Screenshot
+## 界面截图
 
-![Screenshot](screenshot/1.png)
+![界面截图](screenshot/1.png)
 
-## Milestones
+## 版本里程碑
 
-- 2026-03-03: Released v0.1.0
-- 2026-03-12: Released v0.1.1
+- 2026-03-03: 发布 v0.1.0
+- 2026-03-12: 发布 v0.1.1
 
-## Star History
+## Star 历史
 
 [![Star History Chart](https://api.star-history.com/svg?repos=luckjiawei/frpc-hub&type=Date)](https://www.star-history.com/#luckjiawei/frpc-desktop&Date)
 
