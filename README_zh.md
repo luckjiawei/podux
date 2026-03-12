@@ -25,6 +25,8 @@
     <br />
     在一个地方集中管理您所有的客户端、代理和连接。告别终端。无需再手动编辑配置文件。
     <br /><br />
+    <a href="https://frpchub.jwinks.com/guide/getting-started.html"><strong>🚀 快速开始</strong></a>
+    &nbsp;&nbsp;·&nbsp;&nbsp;
     <a href="https://frpchub.jwinks.com/"><strong>📖 官方文档</strong></a>
     &nbsp;&nbsp;·&nbsp;&nbsp;
     <a href="https://github.com/luckjiawei/frpc-hub/issues">🐛 提交 Bug</a>
