@@ -1,4 +1,4 @@
-import { Flex, Text } from "@radix-ui/themes";
+import { Flex } from "@radix-ui/themes";
 import { Icon } from "@iconify/react";
 import { motion, AnimatePresence } from "framer-motion";
 
