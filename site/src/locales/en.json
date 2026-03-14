@@ -87,7 +87,6 @@
     "topologyLocalService": "Local Service",
     "noProxies": "No proxies configured",
     "noProxiesDesc": "Add a proxy to see the type distribution",
-    "quickActions": "Quick Actions",
     "qaServersDesc": "Manage server connections",
     "qaProxiesDesc": "Configure proxy tunnels",
     "qaImportDesc": "Import from TOML config",
@@ -156,6 +155,8 @@
     "failedToLoad": "Failed to load server",
     "backToServers": "Back to Servers",
     "serverNamePlaceholder": "e.g. Production Server",
+    "user": "User",
+    "userPlaceholder": "e.g. admin",
     "hostAddressLabel": "Host Address",
     "hostAddressPlaceholder": "e.g. frps.example.com",
     "portLabel": "Port",
@@ -233,7 +234,11 @@
     "saveChanges": "Save Changes",
     "errorInvalidIP": "Invalid IP address or domain name",
     "errorInvalidPort": "Port must be between 1 and 65535",
-    "errorInvalidServerName": "Only letters, numbers, Chinese characters, spaces, dots, underscores, and hyphens are allowed"
+    "errorInvalidServerName": "Only letters, numbers, Chinese characters, spaces, dots, underscores, and hyphens are allowed",
+    "startSuccess": "Server started successfully",
+    "startFailed": "Failed to start server",
+    "stopSuccess": "Server stopped successfully",
+    "stopFailed": "Failed to stop server"
   },
   "proxy": {
     "title": "Proxies",

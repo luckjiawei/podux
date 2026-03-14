@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, Flex, Text, Badge, Grid, Button, Heading, Box, Table, AlertDialog } from "@radix-ui/themes";
 import { Icon } from "@iconify/react";
@@ -12,6 +12,7 @@ import { ServerLatency } from "../../components/ServerLatency";
 import { ServerLocation } from "../../components/ServerLocation";
 import { useTranslation } from "react-i18next";
 import { useServerProxies } from "./useServerProxies";
+import { apiPost } from "../../lib/api";
 
 export function ServerDetailPage() {
   const { t } = useTranslation();
@@ -40,26 +41,63 @@ export function ServerDetailPage() {
     return () => clearTimeout(timer);
   }, []);
 
-  useEffect(() => {
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const fetchServer = useCallback(async (showLoading = true) => {
     if (!id) return;
+    try {
+      if (showLoading) setLoading(true);
+      const record = await pb.collection("fh_servers").getOne<Server>(id);
+      setServer(record);
+    } catch (err: any) {
+      if (err.isAbort) return;
+      console.error("Failed to load server details:", err);
+      setError(err.message || t("server.failedToLoad"));
+      toast.error(t("server.failedToLoad"));
+    } finally {
+      if (showLoading) setLoading(false);
+    }
+  }, [id, t]);
 
-    const fetchServer = async () => {
-      try {
-        setLoading(true);
-        const record = await pb.collection("fh_servers").getOne<Server>(id);
-        setServer(record);
-      } catch (err: any) {
-        if (err.isAbort) return;
-        console.error("Failed to load server details:", err);
-        setError(err.message || t("server.failedToLoad"));
-        toast.error(t("server.failedToLoad"));
-      } finally {
-        setLoading(false);
-      }
-    };
-
+  useEffect(() => {
     fetchServer();
-  }, [id, navigate]);
+  }, [fetchServer]);
+
+  const handleStart = async () => {
+    if (!id) return;
+    try {
+      setActionLoading(true);
+      const response = await apiPost("/api/frpc/launch", { id });
+      if (response.ok) {
+        toast.success(t("server.startSuccess"));
+        fetchServer(false);
+      } else {
+        toast.error(t("server.startFailed"));
+      }
+    } catch (err: any) {
+      toast.error(err.message || t("server.startFailed"));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleStop = async () => {
+    if (!id) return;
+    try {
+      setActionLoading(true);
+      const response = await apiPost("/api/frpc/terminate", { id });
+      if (response.ok) {
+        toast.success(t("server.stopSuccess"));
+        fetchServer(false);
+      } else {
+        toast.error(t("server.stopFailed"));
+      }
+    } catch (err: any) {
+      toast.error(err.message || t("server.stopFailed"));
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   // SSE log streaming
   useEffect(() => {
@@ -131,6 +169,21 @@ export function ServerDetailPage() {
         title={server.serverName}
         description={t("server.detailsAndLogs")}
         visible={mounted}
+        extra={
+          <Flex gap="3" align="center">
+            {server.bootStatus === "running" ? (
+              <Button size="2" color="red" variant="soft" onClick={handleStop} disabled={actionLoading}>
+                {actionLoading ? <Icon icon="lucide:loader-2" className="animate-spin" /> : <Icon icon="lucide:square" width="16" height="16" />}
+                {t("server.stop")}
+              </Button>
+            ) : (
+              <Button size="2" color="green" variant="soft" onClick={handleStart} disabled={actionLoading}>
+                {actionLoading ? <Icon icon="lucide:loader-2" className="animate-spin" /> : <Icon icon="lucide:play" width="16" height="16" />}
+                {t("server.start")}
+              </Button>
+            )}
+          </Flex>
+        }
       />
       {/*<motion.div*/}
       {/*  initial={{ opacity: 0, y: -20 }}*/}
@@ -178,6 +231,16 @@ export function ServerDetailPage() {
                     {server.serverPort}
                   </Text>
                 </Box>
+                {server.user && (
+                  <Box>
+                    <Text size="2" color="gray">
+                      {t("server.user")}
+                    </Text>
+                    <Text as="div" size="3" weight="medium">
+                      {server.user}
+                    </Text>
+                  </Box>
+                )}
                 <Box>
                   <Text size="2" color="gray">
                     {t("server.latency")}

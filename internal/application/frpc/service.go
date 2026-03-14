@@ -27,6 +27,7 @@ import (
 )
 
 var validServerID = regexp.MustCompile(`^[a-z0-9]{15}$`)
+var sensitiveRegex = regexp.MustCompile(`"(?i)(token|password|sk|pwd|secretkey|httpuser|httppwd|oidctoken|oidcclientsecret)":"(?:[^"\\]|\\.)*"`)
 
 type Service struct {
 	mu             sync.RWMutex
@@ -60,6 +61,7 @@ func (fs *Service) genCommonCfgs(id *string) (*v1.ClientCommonConfig, error) {
 	// basic config
 	cfg.ServerAddr = record.GetString("serverAddr")
 	cfg.ServerPort = record.GetInt("serverPort")
+	cfg.User = record.GetString("user")
 
 	logDirPath := filepath.Join("pb_data", "frpc", *id)
 	if err := os.MkdirAll(logDirPath, 0755); err != nil {
@@ -233,6 +235,19 @@ func (fs *Service) LaunchFrpc(serverId *string) error {
 
 	fs.app.Logger().Debug("Config", "serverAddr", cfg.ServerAddr, "serverPort", cfg.ServerPort, "proxyCount", len(proxyCfgs))
 
+	for _, c := range proxyCfgs {
+		c.Complete(cfg.User)
+	}
+
+	// Print frp configurations in logs with sensitive data masked
+	commonCfgBytes, _ := json.Marshal(cfg)
+	proxyCfgsBytes, _ := json.Marshal(proxyCfgs)
+
+	safeCommon := sensitiveRegex.ReplaceAll(commonCfgBytes, []byte(`"${1}":"***"`))
+	safeProxies := sensitiveRegex.ReplaceAll(proxyCfgsBytes, []byte(`"${1}":"***"`))
+
+	fs.app.Logger().Info("FRP Configuration", "common", string(safeCommon), "proxies", string(safeProxies))
+
 	cfg.Complete()
 	log.InitLogger(cfg.Log.To, cfg.Log.Level, int(cfg.Log.MaxDays), cfg.Log.DisablePrintColor)
 
@@ -269,13 +284,13 @@ func (fs *Service) LaunchFrpc(serverId *string) error {
 		done <- err
 	}()
 
-	go fs.monitorServiceStatus(serverId, svr, ctx, done)
+	go fs.monitorServiceStatus(serverId, svr, ctx, done, cfg.User)
 
 	return nil
 }
 
 // monitorServiceStatus monitors service status and updates the database.
-func (fs *Service) monitorServiceStatus(id *string, svr *client.Service, ctx context.Context, done <-chan error) {
+func (fs *Service) monitorServiceStatus(id *string, svr *client.Service, ctx context.Context, done <-chan error, user string) {
 	time.Sleep(2 * time.Second)
 
 	select {
@@ -292,7 +307,7 @@ func (fs *Service) monitorServiceStatus(id *string, svr *client.Service, ctx con
 		fs.app.Logger().Info("Service is running", "id", *id)
 	}
 
-	go fs.monitorProxyStatus(id, svr, ctx)
+	go fs.monitorProxyStatus(id, svr, ctx, user)
 
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
@@ -327,7 +342,7 @@ func (fs *Service) destroying(id *string) {
 }
 
 // monitorProxyStatus monitors proxy status from frp and updates the database.
-func (fs *Service) monitorProxyStatus(serverId *string, svr *client.Service, ctx context.Context) {
+func (fs *Service) monitorProxyStatus(serverId *string, svr *client.Service, ctx context.Context, user string) {
 	fs.app.Logger().Info("Starting proxy status monitoring", "serverId", *serverId)
 
 	statusExporter := svr.StatusExporter()
@@ -348,8 +363,12 @@ func (fs *Service) monitorProxyStatus(serverId *string, svr *client.Service, ctx
 			}
 
 			for _, proxy := range proxies {
-				proxyName := proxy.Name + "-" + proxy.Id
-				status, exists := statusExporter.GetProxyStatus(proxyName)
+				baseName := proxy.Name + "-" + proxy.Id
+				prefix := ""
+				if user != "" {
+					prefix = user + "."
+				}
+				status, exists := statusExporter.GetProxyStatus(prefix + baseName)
 
 				if exists {
 					var bootStatus proxydomain.ProxyBootStatus
@@ -473,6 +492,19 @@ func (fs *Service) ReloadFrpc(serverId *string) error {
 	if err != nil {
 		return err
 	}
+
+	server, err := fs.app.FindRecordById("fh_servers", *serverId)
+	if err != nil {
+		return err
+	}
+	user := server.GetString("user")
+	for _, c := range proxyCfgs {
+		c.Complete(user)
+	}
+
+	proxyCfgsBytes, _ := json.Marshal(proxyCfgs)
+	safeProxies := sensitiveRegex.ReplaceAll(proxyCfgsBytes, []byte(`"${1}":"***"`))
+	fs.app.Logger().Info("FRP Reload Configurations", "proxies", string(safeProxies))
 
 	fs.mu.RLock()
 	svr := fs.processes[*serverId]

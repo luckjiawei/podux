@@ -87,7 +87,6 @@
     "topologyLocalService": "本地服务",
     "noProxies": "暂无代理配置",
     "noProxiesDesc": "添加代理后即可查看类型分布",
-    "quickActions": "快速操作",
     "qaServersDesc": "管理服务器连接",
     "qaProxiesDesc": "配置代理隧道",
     "qaImportDesc": "从 TOML 配置文件导入",
@@ -156,6 +155,8 @@
     "failedToLoad": "加载服务器失败",
     "backToServers": "返回服务器列表",
     "serverNamePlaceholder": "例如：生产服务器",
+    "user": "用户",
+    "userPlaceholder": "例如：admin",
     "hostAddressLabel": "主机地址",
     "hostAddressPlaceholder": "例如：frps.example.com",
     "portLabel": "端口",
@@ -233,7 +234,11 @@
     "saveChanges": "保存更改",
     "errorInvalidIP": "无效的 IP 地址或域名",
     "errorInvalidPort": "端口必须在 1 到 65535 之间",
-    "errorInvalidServerName": "仅允许字母、数字、中文字符、空格、点、下划线和连字符"
+    "errorInvalidServerName": "仅允许字母、数字、中文字符、空格、点、下划线和连字符",
+    "startSuccess": "服务器启动成功",
+    "startFailed": "服务器启动失败",
+    "stopSuccess": "服务器停止成功",
+    "stopFailed": "服务器停止失败"
   },
   "proxy": {
     "title": "代理",

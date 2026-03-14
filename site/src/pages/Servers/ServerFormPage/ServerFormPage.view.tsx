@@ -190,6 +190,15 @@ export function ServerFormPageView({
                     />
                   </FormItem>
 
+                  <FormItem label={t("server.user")}>
+                    <TextField.Root
+                      size="2"
+                      placeholder={t("server.userPlaceholder")}
+                      value={formData.user}
+                      onChange={(e) => onChange("user", e.target.value)}
+                    />
+                  </FormItem>
+
                   <AnimatePresence>
                     {formData.auth.method === "token" && (
                       <FormItem key="token-field" label={t("server.token")} animate>

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 export interface Server {
   id: string;
   serverName: string;
+  user: string;
   serverAddr: string;
   serverPort: number;
   description: string;

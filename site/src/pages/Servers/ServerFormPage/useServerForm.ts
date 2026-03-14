@@ -7,6 +7,7 @@ import { REGEX } from "../../../lib/regex";
 
 export interface ServerFormData {
   serverName: string;
+  user: string;
   serverAddr: string;
   serverPort: number;
   serverVersion: string;
@@ -41,6 +42,7 @@ export interface ServerFormData {
 
 const defaultData: ServerFormData = {
   serverName: "",
+  user: "",
   serverAddr: "",
   serverPort: 7000,
   serverVersion: "built-in",
@@ -100,6 +102,7 @@ export function useServerForm() {
         setFormData({
           ...defaultData,
           serverName: record.serverName || "",
+          user: record.user || "",
           serverAddr: record.serverAddr || "",
           serverPort: record.serverPort || 7000,
           serverVersion: record.serverVersion || "built-in",

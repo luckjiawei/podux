@@ -14,6 +14,7 @@ import (
 type tomlFrpClientConfig struct {
 	ServerAddr string              `toml:"serverAddr"`
 	ServerPort int                 `toml:"serverPort"`
+	User       string              `toml:"user"`
 	Auth       tomlAuthConfig      `toml:"auth"`
 	Log        tomlLogConfig       `toml:"log"`
 	Transport  tomlTransportConfig `toml:"transport"`
@@ -67,6 +68,7 @@ type ImportServerInfo struct {
 	Name        string                 `json:"name"`
 	ServerAddr  string                 `json:"serverAddr"`
 	ServerPort  int                    `json:"serverPort"`
+	User        string                 `json:"user"`
 	Auth        map[string]interface{} `json:"auth"`
 	Log         map[string]interface{} `json:"log"`
 	Transport   map[string]interface{} `json:"transport"`
@@ -200,6 +202,7 @@ func (s *Service) ParseToml(req *ParseTomlRequest) (*ImportPreviewResponse, erro
 		Name:        fmt.Sprintf("%s:%d", cfg.ServerAddr, serverPort),
 		ServerAddr:  cfg.ServerAddr,
 		ServerPort:  serverPort,
+		User:        cfg.User,
 		Auth:        authMap,
 		Log:         logMap,
 		Transport:   transportMap,
@@ -393,6 +396,7 @@ func (s *Service) handleServerImport(
 	serverRecord.Set("serverName", serverName)
 	serverRecord.Set("serverAddr", cfg.ServerAddr)
 	serverRecord.Set("serverPort", serverPort)
+	serverRecord.Set("user", cfg.User)
 	serverRecord.Set("serverVersion", "built-in")
 	serverRecord.Set("auth", string(authJSON))
 	serverRecord.Set("log", string(logJSON))
