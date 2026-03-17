@@ -1,4 +1,4 @@
 {
   "name": "podux-doc",
-  "pages_build_output_dir": "docs/vitepass/.vitepress/dist"
+  "pages_build_output_dir": "docs/.vitepress/dist"
 }
