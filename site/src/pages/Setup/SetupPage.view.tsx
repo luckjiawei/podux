@@ -6,7 +6,7 @@ import { Loading } from "../../components/Loading";
 import { ThemeToggle } from "../../components/ThemeToggle";
 import { LanguageToggle } from "../../components/LanguageToggle";
 import { Icon } from "@iconify/react";
-import logo from "../../assets/logo.png";
+import logo from "../../assets/logo.svg";
 import { useTranslation } from "react-i18next";
 
 interface SetupViewProps {

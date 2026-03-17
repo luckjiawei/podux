@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { PageTransition } from "../components/PageTransition";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { LanguageToggle } from "../components/LanguageToggle";
-import logo from "../assets/logo.png";
+import logo from "../assets/logo.svg";
 import { Icon } from "@iconify/react";
 
 interface MainLayoutProps {
