@@ -252,7 +252,10 @@
     "probeUnreachable": "Unreachable",
     "probeNow": "Now",
     "probe30mAgo": "30 min ago",
-    "latencyMs": "Latency (ms)"
+    "latencyMs": "Latency (ms)",
+    "viewLogs": "Logs",
+    "viewLogsDesc": "Real-time connection log stream",
+    "backToDetail": "Back to Details"
   },
   "proxy": {
     "title": "Proxies",

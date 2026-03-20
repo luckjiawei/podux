@@ -372,6 +372,18 @@ export function ServersView({
                                 </Button>
                               </Link>
 
+                              <Link to={`/servers/${server.id}/logs`} style={{ textDecoration: "none" }}>
+                                <Button
+                                  size="1"
+                                  variant="soft"
+                                  className="cursor-pointer"
+                                  color="gray"
+                                >
+                                  <Icon icon="lucide:scroll-text" width="14" height="14" />
+                                  {t("server.viewLogs")}
+                                </Button>
+                              </Link>
+
                               <Button
                                 size="1"
                                 variant="soft"

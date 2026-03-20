@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, Flex, Text, Badge, Grid, Button, Heading, Box, Table, AlertDialog } from "@radix-ui/themes";
 import { Icon } from "@iconify/react";
@@ -11,6 +11,7 @@ import { motion } from "framer-motion";
 import { ServerLocation } from "../../components/ServerLocation";
 import { ProbeHistory } from "../../components/ProbeHistory";
 import { LatencyChart } from "../../components/LatencyChart";
+import { ServerLogViewer } from "../../components/ServerLogViewer";
 import { useTranslation } from "react-i18next";
 import { useServerProxies } from "./useServerProxies";
 import { apiPost } from "../../lib/api";
@@ -22,8 +23,6 @@ export function ServerDetailPage() {
   const [server, setServer] = useState<Server | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [logs, setLogs] = useState<string[]>([]);
-  const logContainerRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
   const [deleteProxyId, setDeleteProxyId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -99,33 +98,6 @@ export function ServerDetailPage() {
       setActionLoading(false);
     }
   };
-
-  // SSE log streaming
-  useEffect(() => {
-    if (!id) return;
-
-    const token = pb.authStore.token;
-    const es = new EventSource(`/api/frpc/logs/stream?id=${id}&token=${token}`);
-
-    es.onmessage = (event) => {
-      setLogs((prev) => [...prev, event.data]);
-    };
-
-    es.onerror = () => {
-      es.close();
-    };
-
-    return () => {
-      es.close();
-    };
-  }, [id]);
-
-  // Auto-scroll to bottom when new logs arrive
-  useEffect(() => {
-    if (logContainerRef.current) {
-      logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
-    }
-  }, [logs]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -559,42 +531,9 @@ export function ServerDetailPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={mounted ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
         transition={{ duration: 0.5, delay: 0.3, ease: "easeOut" }}
-        className="flex flex-1 flex-col" // To make it expand
       >
-        <Card size="3" className="flex flex-1 flex-col">
-          <Flex justify="between" align="center" mb="4">
-            <Heading size="4">{t("server.connectionLogs")}</Heading>
-            <Flex gap="2">
-              <Button size="1" variant="soft" onClick={() => setLogs([])}>
-                <Icon icon="lucide:trash-2" /> {t("server.clear")}
-              </Button>
-            </Flex>
-          </Flex>
-
-          <Box
-            ref={logContainerRef}
-            style={{
-              backgroundColor: "var(--gray-2)",
-              borderRadius: "var(--radius-3)",
-              padding: "1rem",
-              fontFamily: "monospace",
-              fontSize: "0.9rem",
-              height: "300px",
-              overflowY: "auto",
-            }}
-          >
-            {logs.length > 0 ? (
-              logs.map((log, index) => (
-                <div key={index} style={{ marginBottom: "4px" }}>
-                  <Text color="gray">{log}</Text>
-                </div>
-              ))
-            ) : (
-              <Text color="gray" style={{ fontStyle: "italic" }}>
-                {t("server.noLogsAvailable")}
-              </Text>
-            )}
-          </Box>
+        <Card size="3">
+          <ServerLogViewer serverId={id!} />
         </Card>
       </motion.div>
 

@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/* Remove focus outline on all recharts SVG surfaces */
+.recharts-surface,
+.recharts-legend-wrapper,
+.recharts-legend-wrapper * {
+  outline: none !important;
+}
+
 /* Status Indicator Dot — Green pulse (online) */
 @keyframes status-pulse-green {
   0% {

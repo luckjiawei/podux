@@ -252,7 +252,10 @@
     "probeUnreachable": "不可达",
     "probeNow": "现在",
     "probe30mAgo": "30 分钟前",
-    "latencyMs": "延迟 (ms)"
+    "latencyMs": "延迟 (ms)",
+    "viewLogs": "日志",
+    "viewLogsDesc": "实时连接日志流",
+    "backToDetail": "返回详情"
   },
   "proxy": {
     "title": "代理",
