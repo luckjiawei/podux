@@ -22,8 +22,12 @@ export function ServerLogViewer({ serverId, height = 300, showHeading = true }: 
     const token = pb.authStore.token;
     const es = new EventSource(`/api/frpc/logs/stream?id=${serverId}&token=${token}`);
 
+    const MAX_LOGS = 500;
     es.onmessage = (event) => {
-      setLogs((prev) => [...prev, event.data]);
+      setLogs((prev) => {
+        const next = [...prev, event.data];
+        return next.length > MAX_LOGS ? next.slice(next.length - MAX_LOGS) : next;
+      });
     };
 
     es.onerror = () => {

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { Flex, Text, Tooltip, Badge } from "@radix-ui/themes";
 import { motion } from "framer-motion";
 import { Icon } from "@iconify/react";
@@ -80,25 +80,31 @@ export function ProbeHistory({ serverId }: ProbeHistoryProps) {
   const [loading, setLoading] = useState(true);
   const [animKey, setAnimKey] = useState(0);
 
-  const load = useCallback(async () => {
-    try {
-      const res = await apiGet(`/api/servers/probe-history?serverId=${serverId}`);
-      if (!res.ok) return;
-      const points: ProbePoint[] = await res.json();
-      setBuckets(buildBuckets(points));
-      setAnimKey((k) => k + 1);
-    } catch {
-      // silent
-    } finally {
-      setLoading(false);
-    }
-  }, [serverId]);
-
   useEffect(() => {
+    let cancelled = false;
+
+    const load = async () => {
+      try {
+        const res = await apiGet(`/api/servers/probe-history?serverId=${serverId}`);
+        if (!res.ok || cancelled) return;
+        const points: ProbePoint[] = await res.json();
+        if (cancelled) return;
+        setBuckets(buildBuckets(points));
+        setAnimKey((k) => k + 1);
+      } catch {
+        // silent
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
     load();
     const interval = setInterval(load, 30_000);
-    return () => clearInterval(interval);
-  }, [load]);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [serverId]);
 
   // Stats
   const valid = buckets.filter((b) => b.avg !== null);

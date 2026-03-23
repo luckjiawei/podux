@@ -57,7 +57,8 @@ export function ServerDetailPage() {
     } finally {
       if (showLoading) setLoading(false);
     }
-  }, [id, t]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   useEffect(() => {
     fetchServer();
@@ -144,6 +145,10 @@ export function ServerDetailPage() {
         visible={mounted}
         extra={
           <Flex gap="3" align="center">
+            <Button variant="soft" color="gray" onClick={() => navigate("/servers")}>
+              <Icon icon="lucide:arrow-left" width="16" height="16" />
+              {t("server.backToServers")}
+            </Button>
             {server.bootStatus === "running" ? (
               <Button size="2" color="red" variant="soft" onClick={handleStop} disabled={actionLoading}>
                 {actionLoading ? <Icon icon="lucide:loader-2" className="animate-spin" /> : <Icon icon="lucide:square" width="16" height="16" />}

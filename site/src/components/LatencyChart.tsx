@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { Flex, Text } from "@radix-ui/themes";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
@@ -152,25 +152,31 @@ export function LatencyChart({ serverId }: LatencyChartProps) {
   const [loading, setLoading] = useState(true);
   const [animKey, setAnimKey] = useState(0);
 
-  const load = useCallback(async () => {
-    try {
-      const res = await apiGet(`/api/servers/probe-history?serverId=${serverId}`);
-      if (!res.ok) return;
-      const points: ProbePoint[] = await res.json();
-      setData(toChartPoints(points));
-      setAnimKey((k) => k + 1);
-    } catch {
-      // silent
-    } finally {
-      setLoading(false);
-    }
-  }, [serverId]);
-
   useEffect(() => {
+    let cancelled = false;
+
+    const load = async () => {
+      try {
+        const res = await apiGet(`/api/servers/probe-history?serverId=${serverId}`);
+        if (!res.ok || cancelled) return;
+        const points: ProbePoint[] = await res.json();
+        if (cancelled) return;
+        setData(toChartPoints(points));
+        setAnimKey((k) => k + 1);
+      } catch {
+        // silent
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
     load();
     const interval = setInterval(load, 30_000);
-    return () => clearInterval(interval);
-  }, [load]);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [serverId]);
 
   const isEmpty = !loading && data.length === 0;
 
