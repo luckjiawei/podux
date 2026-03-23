@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import pb from "../../lib/pocketbase";
 import { apiPost } from "../../lib/api";
 import { toast } from "sonner";
@@ -25,6 +25,7 @@ export function useProxies() {
   const [proxies, setProxies] = useState<Proxy[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const initializedRef = useRef(false);
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -33,7 +34,7 @@ export function useProxies() {
   const fetchProxies = useCallback(
     async (isRefresh = false) => {
       try {
-        if (!isRefresh && proxies.length === 0) {
+        if (!initializedRef.current) {
           setLoading(true);
         } else if (isRefresh) {
           setRefreshing(true);
@@ -45,6 +46,7 @@ export function useProxies() {
         });
         setProxies(result.items);
         setTotalPages(result.totalPages);
+        initializedRef.current = true;
       } catch (err) {
         if ((err as Record<string, unknown>)?.isAbort) return;
         toast.error(err instanceof Error ? err.message : "Failed to fetch proxies");
@@ -53,7 +55,7 @@ export function useProxies() {
         setRefreshing(false);
       }
     },
-    [page, proxies.length]
+    [page]
   );
 
   useEffect(() => {

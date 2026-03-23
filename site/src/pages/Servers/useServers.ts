@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import pb from "../../lib/pocketbase";
 import { apiGet, apiPost } from "../../lib/api";
 import { toast } from "sonner";
@@ -65,6 +65,7 @@ export function useServers() {
   const [servers, setServers] = useState<Server[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const initializedRef = useRef(false);
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -75,7 +76,7 @@ export function useServers() {
   const fetchServers = useCallback(
     async (isRefresh = false) => {
       try {
-        if (!isRefresh && servers.length === 0) {
+        if (!initializedRef.current) {
           setLoading(true);
         } else if (isRefresh) {
           setRefreshing(true);
@@ -93,6 +94,7 @@ export function useServers() {
 
         setServers(data.items);
         setTotalPages(data.totalPages);
+        initializedRef.current = true;
       } catch (err) {
         if ((err as any)?.isAbort) return;
         toast.error(err instanceof Error ? err.message : "Failed to fetch servers");
@@ -101,11 +103,14 @@ export function useServers() {
         setRefreshing(false);
       }
     },
-    [page, search, servers.length]
+    [page, search]
   );
 
   useEffect(() => {
     setPage(1);
+    if (initializedRef.current) {
+      setLoading(true);
+    }
   }, [search]);
 
   useEffect(() => {
