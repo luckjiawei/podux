@@ -1371,10 +1371,23 @@ func init() {
 						"type": "text"
 					},
 					{
+						"cascadeDelete": false,
+						"collectionId": "pbc_1442576311",
+						"hidden": false,
+						"id": "relation361630566",
+						"maxSelect": 1,
+						"minSelect": 0,
+						"name": "targetId",
+						"presentable": false,
+						"required": true,
+						"system": false,
+						"type": "relation"
+					},
+					{
 						"hidden": false,
 						"id": "select2505851765",
 						"maxSelect": 1,
-						"name": "metric_key",
+						"name": "metricKey",
 						"presentable": false,
 						"required": false,
 						"system": false,
@@ -1405,24 +1418,11 @@ func init() {
 						"required": false,
 						"system": false,
 						"type": "number"
-					},
-					{
-						"cascadeDelete": false,
-						"collectionId": "pbc_1442576311",
-						"hidden": false,
-						"id": "relation361630566",
-						"maxSelect": 1,
-						"minSelect": 0,
-						"name": "target_id",
-						"presentable": false,
-						"required": true,
-						"system": false,
-						"type": "relation"
 					}
 				],
 				"id": "pbc_793044944",
 				"indexes": [
-					"CREATE INDEX ` + "`" + `idx_ccjpJ7y6sJ` + "`" + ` ON ` + "`" + `fh_metrics_raw` + "`" + ` (\n  ` + "`" + `target_id` + "`" + `,\n  ` + "`" + `t` + "`" + `,\n  ` + "`" + `metric_key` + "`" + `\n)"
+					"CREATE INDEX ` + "`" + `idx_ccjpJ7y6sJ` + "`" + ` ON ` + "`" + `fh_metrics_raw` + "`" + ` (\n  ` + "`" + `targetId` + "`" + `,\n  ` + "`" + `t` + "`" + `,\n  ` + "`" + `metricKey` + "`" + `\n)"
 				],
 				"listRule": null,
 				"name": "fh_metrics_raw",
@@ -1480,6 +1480,208 @@ func init() {
 				"indexes": [],
 				"listRule": null,
 				"name": "fh_metrics_targets",
+				"system": false,
+				"type": "base",
+				"updateRule": null,
+				"viewRule": null
+			},
+			{
+				"createRule": null,
+				"deleteRule": null,
+				"fields": [
+					{
+						"autogeneratePattern": "[a-z0-9]{15}",
+						"hidden": false,
+						"id": "text3208210256",
+						"max": 15,
+						"min": 15,
+						"name": "id",
+						"pattern": "^[a-z0-9]+$",
+						"presentable": false,
+						"primaryKey": true,
+						"required": true,
+						"system": true,
+						"type": "text"
+					},
+					{
+						"cascadeDelete": false,
+						"collectionId": "pbc_1442576311",
+						"hidden": false,
+						"id": "relation361630566",
+						"maxSelect": 1,
+						"minSelect": 0,
+						"name": "targetId",
+						"presentable": false,
+						"required": false,
+						"system": false,
+						"type": "relation"
+					},
+					{
+						"hidden": false,
+						"id": "select2505851765",
+						"maxSelect": 1,
+						"name": "metricKey",
+						"presentable": false,
+						"required": false,
+						"system": false,
+						"type": "select",
+						"values": [
+							"frps_delay"
+						]
+					},
+					{
+						"hidden": false,
+						"id": "date2238339752",
+						"max": "",
+						"min": "",
+						"name": "t",
+						"presentable": false,
+						"required": false,
+						"system": false,
+						"type": "date"
+					},
+					{
+						"hidden": false,
+						"id": "number4252428468",
+						"max": null,
+						"min": null,
+						"name": "valAvg",
+						"onlyInt": false,
+						"presentable": false,
+						"required": false,
+						"system": false,
+						"type": "number"
+					},
+					{
+						"hidden": false,
+						"id": "number2095552691",
+						"max": null,
+						"min": null,
+						"name": "valMax",
+						"onlyInt": false,
+						"presentable": false,
+						"required": false,
+						"system": false,
+						"type": "number"
+					},
+					{
+						"hidden": false,
+						"id": "number1089120234",
+						"max": null,
+						"min": null,
+						"name": "valMin",
+						"onlyInt": false,
+						"presentable": false,
+						"required": false,
+						"system": false,
+						"type": "number"
+					}
+				],
+				"id": "pbc_316017333",
+				"indexes": [
+					"CREATE INDEX ` + "`" + `idx_er76FRWKT4` + "`" + ` ON ` + "`" + `fh_metrics_hourly` + "`" + ` (\n  ` + "`" + `metricKey` + "`" + `,\n  ` + "`" + `targetId` + "`" + `,\n  ` + "`" + `t` + "`" + `\n)"
+				],
+				"listRule": null,
+				"name": "fh_metrics_hourly",
+				"system": false,
+				"type": "base",
+				"updateRule": null,
+				"viewRule": null
+			},
+			{
+				"createRule": null,
+				"deleteRule": null,
+				"fields": [
+					{
+						"autogeneratePattern": "[a-z0-9]{15}",
+						"hidden": false,
+						"id": "text3208210256",
+						"max": 15,
+						"min": 15,
+						"name": "id",
+						"pattern": "^[a-z0-9]+$",
+						"presentable": false,
+						"primaryKey": true,
+						"required": true,
+						"system": true,
+						"type": "text"
+					},
+					{
+						"cascadeDelete": false,
+						"collectionId": "pbc_1442576311",
+						"hidden": false,
+						"id": "relation962958965",
+						"maxSelect": 1,
+						"minSelect": 0,
+						"name": "targetId",
+						"presentable": false,
+						"required": false,
+						"system": false,
+						"type": "relation"
+					},
+					{
+						"hidden": false,
+						"id": "select2505851765",
+						"maxSelect": 1,
+						"name": "metricKey",
+						"presentable": false,
+						"required": false,
+						"system": false,
+						"type": "select",
+						"values": [
+							"frps_delay"
+						]
+					},
+					{
+						"hidden": false,
+						"id": "date2238339752",
+						"max": "",
+						"min": "",
+						"name": "t",
+						"presentable": false,
+						"required": false,
+						"system": false,
+						"type": "date"
+					},
+					{
+						"hidden": false,
+						"id": "number4252428468",
+						"max": null,
+						"min": null,
+						"name": "valAvg",
+						"onlyInt": false,
+						"presentable": false,
+						"required": false,
+						"system": false,
+						"type": "number"
+					},
+					{
+						"hidden": false,
+						"id": "date2095552691",
+						"max": "",
+						"min": "",
+						"name": "valMax",
+						"presentable": false,
+						"required": false,
+						"system": false,
+						"type": "date"
+					},
+					{
+						"hidden": false,
+						"id": "date1089120234",
+						"max": "",
+						"min": "",
+						"name": "valMin",
+						"presentable": false,
+						"required": false,
+						"system": false,
+						"type": "date"
+					}
+				],
+				"id": "pbc_3875966484",
+				"indexes": [],
+				"listRule": null,
+				"name": "fh_metrics_daily",
 				"system": false,
 				"type": "base",
 				"updateRule": null,

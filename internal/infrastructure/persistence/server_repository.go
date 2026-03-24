@@ -83,7 +83,7 @@ func (r *ServerRepository) GetMaxLatency() (int64, error) {
 	err := r.app.DB().
 		Select("MAX(val)").
 		From("fh_metrics_raw").
-		Where(dbx.NewExp("metric_key = 'frps_delay' AND t IN (SELECT MAX(t) FROM fh_metrics_raw WHERE metric_key = 'frps_delay' GROUP BY target_id)")).
+		Where(dbx.NewExp("metricKey = 'frps_delay' AND t IN (SELECT MAX(t) FROM fh_metrics_raw WHERE metricKey = 'frps_delay' GROUP BY targetId)")).
 		Row(&maxLatency)
 
 	if err != nil {

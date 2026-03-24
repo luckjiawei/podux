@@ -166,9 +166,9 @@ func (h *ServerHandler) RegisterHandlers(e *core.ServeEvent) {
 			NewQuery(`
 				SELECT r.t, r.val
 				FROM fh_metrics_raw r
-				INNER JOIN fh_metrics_targets t ON r.target_id = t.id
+				INNER JOIN fh_metrics_targets t ON r.targetId = t.id
 				WHERE t.serverId = {:serverId}
-				  AND r.metric_key = {:key}
+				  AND r.metricKey = {:key}
 				  AND r.t >= {:since}
 				ORDER BY r.t ASC
 				LIMIT 500

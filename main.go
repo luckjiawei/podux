@@ -47,6 +47,7 @@ func main() {
 	settingsService := system.NewService(app)
 	geoService := monitoring.NewGeoService(app)
 	metricsService := monitoring.NewMetricsService(app)
+	metricsScheduler := monitoring.NewMetricsScheduler(app, metricsService)
 	networkMonitorService := monitoring.NewMonitorService(app, geoService, metricsService)
 	importService := importer.NewService(app)
 	versionService := version.NewService(app)
@@ -89,6 +90,7 @@ func main() {
 		// Start network monitoring service using intervals from settings
 		latencyInterval, geoInterval := settingsService.GetMonitoringIntervals()
 		networkMonitorService.Start(latencyInterval, geoInterval)
+		metricsScheduler.Register()
 
 		// Register routes for each module
 		//githubHandler.RegisterHandlers(e)
