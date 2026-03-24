@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { Button, Card, Flex, Heading } from "@radix-ui/themes";
+import { Button, Card, Flex } from "@radix-ui/themes";
 import { Icon } from "@iconify/react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "../../components/PageHeader";
