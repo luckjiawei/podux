@@ -177,7 +177,7 @@ func (s *Service) GetLatestVersion() (*LatestVersionResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("User-Agent", "podux-server")
+	req.Header.Set("User-Agent", "podux-server/"+buildinfo.AppVersion)
 	req.Header.Set("Accept", "application/vnd.github+json")
 
 	resp, err := client.Do(req)
