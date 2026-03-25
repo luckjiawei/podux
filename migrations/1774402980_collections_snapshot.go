@@ -1657,29 +1657,33 @@ func init() {
 					},
 					{
 						"hidden": false,
-						"id": "date2095552691",
-						"max": "",
-						"min": "",
+						"id": "number3814843458",
+						"max": null,
+						"min": null,
 						"name": "valMax",
+						"onlyInt": false,
 						"presentable": false,
 						"required": false,
 						"system": false,
-						"type": "date"
+						"type": "number"
 					},
 					{
 						"hidden": false,
-						"id": "date1089120234",
-						"max": "",
-						"min": "",
+						"id": "number3748453147",
+						"max": null,
+						"min": null,
 						"name": "valMin",
+						"onlyInt": false,
 						"presentable": false,
 						"required": false,
 						"system": false,
-						"type": "date"
+						"type": "number"
 					}
 				],
 				"id": "pbc_3875966484",
-				"indexes": [],
+				"indexes": [
+					"CREATE INDEX ` + "`" + `idx_cytGPviJew` + "`" + ` ON ` + "`" + `fh_metrics_daily` + "`" + ` (\n  ` + "`" + `targetId` + "`" + `,\n  ` + "`" + `metricKey` + "`" + `,\n  ` + "`" + `t` + "`" + `\n)"
+				],
 				"listRule": null,
 				"name": "fh_metrics_daily",
 				"system": false,
