@@ -50,10 +50,23 @@ export function ProxiesView({
   const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const handleCopy = (text: string, id: string) => {
-    navigator.clipboard.writeText(text).then(() => {
+    const done = () => {
       setCopiedId(id);
       setTimeout(() => setCopiedId(null), 1500);
-    });
+    };
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(done);
+    } else {
+      const el = document.createElement("textarea");
+      el.value = text;
+      el.style.position = "fixed";
+      el.style.opacity = "0";
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+      done();
+    }
   };
 
   useEffect(() => {
@@ -301,8 +314,8 @@ export function ProxiesView({
                                 </Flex>
                               );
                             }
-                            const displayText = proxy.remotePort || "-";
-                            if (displayText === "-")
+                            const displayText = proxy.remotePort ? String(proxy.remotePort) : "";
+                            if (!displayText)
                               return <Text size="2" color="gray">-</Text>;
                             const copyKey = `${proxy.id}-port`;
                             const isCopied = copiedId === copyKey;
