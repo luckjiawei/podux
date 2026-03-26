@@ -21,6 +21,11 @@ interface ProxiesViewProps {
   onDeleteProxy: (id: string) => Promise<void>;
   onToggleStatus: (proxy: Proxy) => Promise<void>;
   refreshProxies: () => void;
+  page: number;
+  setPage: (page: number) => void;
+  totalPages: number;
+  search: string;
+  setSearch: (value: string) => void;
 }
 
 export function ProxiesView({
@@ -31,6 +36,11 @@ export function ProxiesView({
   onDeleteProxy,
   onToggleStatus,
   refreshProxies,
+  page,
+  setPage,
+  totalPages,
+  search,
+  setSearch,
 }: ProxiesViewProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -121,10 +131,21 @@ export function ProxiesView({
                     size="2"
                     placeholder={t("proxy.searchProxies")}
                     className="min-w-32 flex-1"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
                   >
                     <TextField.Slot>
                       <Icon icon="lucide:search" width="16" height="16" />
                     </TextField.Slot>
+                    {search && (
+                      <TextField.Slot
+                        pr="2"
+                        onClick={() => setSearch("")}
+                        style={{ cursor: "pointer" }}
+                      >
+                        <Icon icon="lucide:x" width="16" height="16" />
+                      </TextField.Slot>
+                    )}
                   </TextField.Root>
                   <Button variant="soft" onClick={refreshProxies} disabled={refreshing}>
                     <Icon
@@ -155,6 +176,7 @@ export function ProxiesView({
                 onAction={() => navigate("/proxies/new")}
               />
             ) : (
+              <>
               <div className="overflow-x-auto">
                 <Table.Root>
                   <Table.Header>
@@ -172,6 +194,7 @@ export function ProxiesView({
                   </Table.Header>
                   <Table.Body>
                     {proxies.map((proxy) => (
+
                       <Table.Row key={proxy.id}>
                         <Table.Cell>
                           <Text weight="medium">{proxy.name || <Text color="gray">-</Text>}</Text>
@@ -379,6 +402,66 @@ export function ProxiesView({
                   </Table.Body>
                 </Table.Root>
               </div>
+              {totalPages > 1 && (
+                <Flex justify="between" align="center" pt="4" px="1">
+                  <Text size="2" color="gray">
+                    {page} / {totalPages}
+                  </Text>
+                  <Flex align="center" style={{ border: "1px solid var(--gray-6)", borderRadius: "var(--radius-3)", overflow: "hidden" }}>
+                    <button
+                      disabled={page === 1}
+                      onClick={() => setPage(page - 1)}
+                      style={{
+                        padding: "6px 10px",
+                        background: "none",
+                        border: "none",
+                        borderRight: "1px solid var(--gray-6)",
+                        cursor: page === 1 ? "not-allowed" : "pointer",
+                        opacity: page === 1 ? 0.4 : 1,
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Icon icon="lucide:chevron-left" width="14" height="14" />
+                    </button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                      <button
+                        key={p}
+                        onClick={() => setPage(p)}
+                        style={{
+                          padding: "6px 12px",
+                          background: p === page ? "var(--accent-9)" : "none",
+                          color: p === page ? "white" : "inherit",
+                          border: "none",
+                          borderRight: p === totalPages ? "none" : "1px solid var(--gray-6)",
+                          cursor: "pointer",
+                          fontSize: "var(--font-size-2)",
+                          fontWeight: p === page ? 600 : 400,
+                        }}
+                      >
+                        {p}
+                      </button>
+                    ))}
+                    <button
+                      disabled={page === totalPages}
+                      onClick={() => setPage(page + 1)}
+                      style={{
+                        padding: "6px 10px",
+                        background: "none",
+                        border: "none",
+                        borderLeft: "1px solid var(--gray-6)",
+                        cursor: page === totalPages ? "not-allowed" : "pointer",
+                        opacity: page === totalPages ? 0.4 : 1,
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Icon icon="lucide:chevron-right" width="14" height="14" />
+                    </button>
+                  </Flex>
+                </Flex>
+              )}
+              </>
             )}
           </Card>
         </motion.div>

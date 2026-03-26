@@ -29,7 +29,20 @@ export function useProxies() {
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [onlineCount, setOnlineCount] = useState(0);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const PER_PAGE = 10;
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
 
   const fetchProxies = useCallback(
     async (isRefresh = false) => {
@@ -40,12 +53,24 @@ export function useProxies() {
           setRefreshing(true);
         }
 
-        const result = await pb.collection("fh_proxies").getList<Proxy>(page, PER_PAGE, {
-          sort: "-created",
-          expand: "serverId",
-        });
+        const searchFilter = debouncedSearch
+          ? `name ~ "${debouncedSearch}" || localIP ~ "${debouncedSearch}" || remotePort ~ "${debouncedSearch}"`
+          : "";
+
+        const [result, onlineResult] = await Promise.all([
+          pb.collection("fh_proxies").getList<Proxy>(page, PER_PAGE, {
+            sort: "-created",
+            expand: "serverId",
+            filter: searchFilter,
+          }),
+          pb.collection("fh_proxies").getList(1, 1, {
+            filter: 'bootStatus = "online"',
+          }),
+        ]);
         setProxies(result.items);
         setTotalPages(result.totalPages);
+        setTotalItems(result.totalItems);
+        setOnlineCount(onlineResult.totalItems);
         initializedRef.current = true;
       } catch (err) {
         if ((err as Record<string, unknown>)?.isAbort) return;
@@ -55,7 +80,7 @@ export function useProxies() {
         setRefreshing(false);
       }
     },
-    [page]
+    [page, debouncedSearch]
   );
 
   useEffect(() => {
@@ -104,9 +129,9 @@ export function useProxies() {
   };
 
   const stats = {
-    total: proxies.length,
-    online: proxies.filter((p) => p.bootStatus === "online").length,
-    offline: proxies.filter((p) => p.bootStatus === "offline").length,
+    total: totalItems,
+    online: onlineCount,
+    offline: totalItems - onlineCount,
   };
 
   const isEmpty = !loading && proxies.length === 0;
@@ -122,6 +147,8 @@ export function useProxies() {
     setPage,
     totalPages,
     stats,
+    search,
+    setSearch,
     refreshProxies: () => fetchProxies(true),
   };
 }

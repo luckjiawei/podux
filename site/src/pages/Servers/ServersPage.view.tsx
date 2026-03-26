@@ -33,6 +33,9 @@ interface ServersViewProps {
   search: string;
   setSearch: (value: string) => void;
   refreshServers: () => void;
+  page: number;
+  setPage: (page: number) => void;
+  totalPages: number;
 }
 
 export function ServersView({
@@ -45,6 +48,9 @@ export function ServersView({
   search,
   setSearch,
   refreshServers,
+  page,
+  setPage,
+  totalPages,
 }: ServersViewProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -411,6 +417,65 @@ export function ServersView({
                     </Table.Body>
                   </Table.Root>
                   </div>
+                  {totalPages > 1 && (
+                    <Flex justify="between" align="center" pt="4" px="1">
+                      <Text size="2" color="gray">
+                        {page} / {totalPages}
+                      </Text>
+                      <Flex align="center" style={{ border: "1px solid var(--gray-6)", borderRadius: "var(--radius-3)", overflow: "hidden" }}>
+                        <button
+                          disabled={page === 1}
+                          onClick={() => setPage(page - 1)}
+                          style={{
+                            padding: "6px 10px",
+                            background: "none",
+                            border: "none",
+                            borderRight: "1px solid var(--gray-6)",
+                            cursor: page === 1 ? "not-allowed" : "pointer",
+                            opacity: page === 1 ? 0.4 : 1,
+                            display: "flex",
+                            alignItems: "center",
+                          }}
+                        >
+                          <Icon icon="lucide:chevron-left" width="14" height="14" />
+                        </button>
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                          <button
+                            key={p}
+                            onClick={() => setPage(p)}
+                            style={{
+                              padding: "6px 12px",
+                              background: p === page ? "var(--accent-9)" : "none",
+                              color: p === page ? "white" : "inherit",
+                              border: "none",
+                              borderRight: p === totalPages ? "none" : "1px solid var(--gray-6)",
+                              cursor: "pointer",
+                              fontSize: "var(--font-size-2)",
+                              fontWeight: p === page ? 600 : 400,
+                            }}
+                          >
+                            {p}
+                          </button>
+                        ))}
+                        <button
+                          disabled={page === totalPages}
+                          onClick={() => setPage(page + 1)}
+                          style={{
+                            padding: "6px 10px",
+                            background: "none",
+                            border: "none",
+                            borderLeft: "1px solid var(--gray-6)",
+                            cursor: page === totalPages ? "not-allowed" : "pointer",
+                            opacity: page === totalPages ? 0.4 : 1,
+                            display: "flex",
+                            alignItems: "center",
+                          }}
+                        >
+                          <Icon icon="lucide:chevron-right" width="14" height="14" />
+                        </button>
+                      </Flex>
+                    </Flex>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
