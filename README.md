@@ -62,6 +62,11 @@
 - 2026-03-12: Released v0.1.2
 - 2026-03-16: Released v0.1.3
 - 2026-03-25: Released v0.1.4
+- 2026-03-26: Released v0.1.5
+
+## License
+
+[MIT](LICENSE)
 
 ## Star History
 
