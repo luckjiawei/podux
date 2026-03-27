@@ -2,7 +2,7 @@ package proxy
 
 import "podux/pkg/types"
 
-// Proxy represents a frpc proxy configuration record.
+// Proxy represents a proxy configuration record.
 type Proxy struct {
 	Id            string                `db:"id" json:"id"`
 	ServerId      string                `db:"serverId" json:"serverId"`
