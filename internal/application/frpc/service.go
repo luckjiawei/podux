@@ -170,6 +170,8 @@ func (fs *Service) genProxyCfgs(serverId *string) ([]v1.ProxyConfigurer, error) 
 		if proxyMap.ProxyType == "http" || proxyMap.ProxyType == "https" {
 			delete(proxyData, "remotePort")
 		}
+		proxyData["type"] = proxyMap.ProxyType
+		delete(proxyData, "proxyType")
 		proxyData["name"] = proxyMap.Name + "-" + proxyMap.Id
 
 		// Remove empty plugin map so frp doesn't try to parse a typeless plugin
