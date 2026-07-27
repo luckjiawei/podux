@@ -21,7 +21,7 @@ interface MainLayoutProps {
 // not on every pixel change.
 function useIsMobile() {
   const isUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-    navigator.userAgent,
+    navigator.userAgent
   );
 
   const [isSmall, setIsSmall] = useState(() => window.matchMedia("(max-width: 760px)").matches);
@@ -62,6 +62,11 @@ const navItems = [
     path: "/proxies",
     icon: <Icon icon="lucide:network" width="18" height="18" />,
   },
+  {
+    labelKey: "nav.visitors",
+    path: "/visitors",
+    icon: <Icon icon="lucide:waypoints" width="18" height="18" />,
+  },
 ];
 
 const mobileBottomNavItems = navItems;
@@ -84,7 +89,8 @@ export function MainLayout({ children }: MainLayoutProps) {
   const [latestVersion, setLatestVersion] = useState<string>("");
   const [releaseUrl, setReleaseUrl] = useState<string>("");
   const [releaseBody, setReleaseBody] = useState<string>("");
-  const updateAvailable = appVersion && latestVersion ? isNewerVersion(latestVersion, appVersion) : false;
+  const updateAvailable =
+    appVersion && latestVersion ? isNewerVersion(latestVersion, appVersion) : false;
 
   useEffect(() => {
     apiGet("/api/system/version")
@@ -111,7 +117,11 @@ export function MainLayout({ children }: MainLayoutProps) {
     : getGravatarUrl(userEmail, 80);
 
   return (
-    <Flex direction="column" className="min-h-screen" style={{ backgroundColor: "var(--gray-2)", minWidth: "320px" }}>
+    <Flex
+      direction="column"
+      className="min-h-screen"
+      style={{ backgroundColor: "var(--gray-2)", minWidth: "320px" }}
+    >
       {/* Top Navigation */}
       <Box
         style={{
@@ -177,7 +187,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                           >
                             {item.icon}
                             <Text size="2" weight="medium">
-                              {t(item.labelKey)}  
+                              {t(item.labelKey)}
                             </Text>
                           </Flex>
                           {isActive && (
@@ -219,7 +229,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                     >
                       <Icon icon="lucide:arrow-up-circle" width="20" height="20" />
                       <span
-                        className="absolute right-1 top-1 h-2 w-2 rounded-full bg-[var(--amber-9)]"
+                        className="absolute top-1 right-1 h-2 w-2 rounded-full bg-[var(--amber-9)]"
                         style={{ display: "block" }}
                       />
                     </motion.div>
@@ -227,24 +237,39 @@ export function MainLayout({ children }: MainLayoutProps) {
                   <Popover.Content style={{ maxWidth: 320 }}>
                     <Flex direction="column" gap="3">
                       <Flex align="center" gap="2">
-                        <Icon icon="lucide:package" width="16" height="16" style={{ color: "var(--amber-11)" }} />
+                        <Icon
+                          icon="lucide:package"
+                          width="16"
+                          height="16"
+                          style={{ color: "var(--amber-11)" }}
+                        />
                         <Text size="2" weight="bold">
                           {t("version.updateAvailable")}
                         </Text>
                       </Flex>
                       <Flex direction="column" gap="1">
                         <Flex justify="between">
-                          <Text size="1" color="gray">{t("version.current")}</Text>
-                          <Text size="1" weight="medium">v{appVersion}</Text>
+                          <Text size="1" color="gray">
+                            {t("version.current")}
+                          </Text>
+                          <Text size="1" weight="medium">
+                            v{appVersion}
+                          </Text>
                         </Flex>
                         <Flex justify="between">
-                          <Text size="1" color="gray">{t("version.latest")}</Text>
-                          <Text size="1" weight="medium" style={{ color: "var(--amber-11)" }}>{latestVersion}</Text>
+                          <Text size="1" color="gray">
+                            {t("version.latest")}
+                          </Text>
+                          <Text size="1" weight="medium" style={{ color: "var(--amber-11)" }}>
+                            {latestVersion}
+                          </Text>
                         </Flex>
                       </Flex>
                       {releaseBody && (
                         <Flex direction="column" gap="1">
-                          <Text size="1" color="gray" weight="medium">{t("version.releaseNotes")}</Text>
+                          <Text size="1" color="gray" weight="medium">
+                            {t("version.releaseNotes")}
+                          </Text>
                           <Box
                             style={{
                               maxHeight: 160,
@@ -254,14 +279,22 @@ export function MainLayout({ children }: MainLayoutProps) {
                               padding: "8px",
                             }}
                           >
-                            <Text size="1" style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                            <Text
+                              size="1"
+                              style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+                            >
                               {releaseBody}
                             </Text>
                           </Box>
                         </Flex>
                       )}
                       {releaseUrl && (
-                        <a href={releaseUrl} target="_blank" rel="noopener noreferrer" className="no-underline">
+                        <a
+                          href={releaseUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="no-underline"
+                        >
                           <Flex
                             align="center"
                             gap="1"
@@ -269,7 +302,9 @@ export function MainLayout({ children }: MainLayoutProps) {
                             style={{ color: "var(--amber-11)" }}
                           >
                             <Icon icon="lucide:external-link" width="14" height="14" />
-                            <Text size="1" weight="medium">{t("version.updateNow")}</Text>
+                            <Text size="1" weight="medium">
+                              {t("version.updateNow")}
+                            </Text>
                           </Flex>
                         </a>
                       )}
@@ -323,7 +358,9 @@ export function MainLayout({ children }: MainLayoutProps) {
                   <DropdownMenu.Item onClick={handleGotoProfile}>
                     <Icon icon="lucide:user" width="16" height="16" /> {t("settings.profile")}
                   </DropdownMenu.Item>
-                  <DropdownMenu.Item onClick={() => window.open("/_/", "_blank", "noopener,noreferrer")}>
+                  <DropdownMenu.Item
+                    onClick={() => window.open("/_/", "_blank", "noopener,noreferrer")}
+                  >
                     <Icon icon="lucide:database" width="16" height="16" /> {t("nav.pbAdmin")}
                   </DropdownMenu.Item>
                   <DropdownMenu.Separator />
@@ -373,7 +410,12 @@ export function MainLayout({ children }: MainLayoutProps) {
                     Version: <Text weight="medium">{appVersion ? `v${appVersion}` : "—"}</Text>
                   </Text>
                   {updateAvailable && releaseUrl && (
-                    <a href={releaseUrl} target="_blank" rel="noopener noreferrer" className="no-underline">
+                    <a
+                      href={releaseUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="no-underline"
+                    >
                       <Flex
                         align="center"
                         gap="1"
@@ -381,7 +423,9 @@ export function MainLayout({ children }: MainLayoutProps) {
                         style={{ color: "var(--amber-11)" }}
                       >
                         <Icon icon="lucide:arrow-up-circle" width="12" height="12" />
-                        <Text size="1" weight="medium">{latestVersion}</Text>
+                        <Text size="1" weight="medium">
+                          {latestVersion}
+                        </Text>
                       </Flex>
                     </a>
                   )}
@@ -441,17 +485,21 @@ export function MainLayout({ children }: MainLayoutProps) {
       {/* Mobile Bottom Navigation */}
       {isMobile && (
         <Box
-          className="fixed bottom-0 left-0 right-0 z-50"
+          className="fixed right-0 bottom-0 left-0 z-50"
           style={{
             backgroundColor: "var(--color-background)",
             borderTop: "1px solid var(--gray-6)",
           }}
         >
-          <Flex justify="between" align="center" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+          <Flex
+            justify="between"
+            align="center"
+            style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+          >
             {mobileBottomNavItems.map((item) => {
               const isActive = location.pathname.startsWith(item.path);
               return (
-                <Link key={item.path} to={item.path} className="no-underline flex-1">
+                <Link key={item.path} to={item.path} className="flex-1 no-underline">
                   <Flex
                     direction="column"
                     align="center"

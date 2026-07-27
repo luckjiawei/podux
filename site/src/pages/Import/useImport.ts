@@ -31,6 +31,19 @@ export interface ImportProxyInfo {
 export interface ImportPreview {
   server: ImportServerInfo;
   proxies: ImportProxyInfo[];
+  visitors: ImportVisitorInfo[];
+}
+
+export interface ImportVisitorInfo {
+  name: string;
+  type: string;
+  serverUser: string;
+  serverName: string;
+  bindAddr: string;
+  bindPort: number;
+  protocol: string;
+  isDuplicate: boolean;
+  existingId: string;
 }
 
 export interface ProxySelection {
@@ -43,6 +56,8 @@ export interface ImportResult {
   serverImported: boolean;
   proxiesImported: number;
   proxiesSkipped: number;
+  visitorsImported: number;
+  visitorsSkipped: number;
 }
 
 export type ImportStep = 1 | 2 | 3;
@@ -57,6 +72,7 @@ export function useImport() {
   const [importServer, setImportServer] = useState(true);
   const [overwriteServer, setOverwriteServer] = useState(false);
   const [proxySelections, setProxySelections] = useState<ProxySelection[]>([]);
+  const [visitorSelections, setVisitorSelections] = useState<ProxySelection[]>([]);
   const [parsing, setParsing] = useState(false);
   const [importing, setImporting] = useState(false);
   const [parseError, setParseError] = useState<string | null>(null);
@@ -101,6 +117,13 @@ export function useImport() {
         overwrite: false,
       }));
       setProxySelections(selections);
+      setVisitorSelections(
+        ((data.visitors || []) as ImportVisitorInfo[]).map((v) => ({
+          name: v.name,
+          import: true,
+          overwrite: false,
+        }))
+      );
       setStep(2);
     } catch {
       setParseError(t("import.errorParseFailed"));
@@ -122,6 +145,19 @@ export function useImport() {
     setProxySelections((prev) => prev.map((s) => ({ ...s, import: selected })));
   }, []);
 
+  const updateVisitorSelection = useCallback(
+    (name: string, field: "import" | "overwrite", value: boolean) => {
+      setVisitorSelections((prev) =>
+        prev.map((s) => (s.name === name ? { ...s, [field]: value } : s))
+      );
+    },
+    []
+  );
+
+  const selectAllVisitors = useCallback((selected: boolean) => {
+    setVisitorSelections((prev) => prev.map((s) => ({ ...s, import: selected })));
+  }, []);
+
   const handleExecute = useCallback(async () => {
     if (!preview) return;
     setImporting(true);
@@ -132,6 +168,7 @@ export function useImport() {
         importServer,
         overwriteServer,
         proxies: proxySelections,
+        visitors: visitorSelections,
       });
       const data = await res.json();
       if (!res.ok) {
@@ -146,7 +183,16 @@ export function useImport() {
     } finally {
       setImporting(false);
     }
-  }, [preview, tomlContent, serverName, importServer, overwriteServer, proxySelections, t]);
+  }, [
+    preview,
+    tomlContent,
+    serverName,
+    importServer,
+    overwriteServer,
+    proxySelections,
+    visitorSelections,
+    t,
+  ]);
 
   const handleReset = useCallback(() => {
     setStep(1);
@@ -156,6 +202,7 @@ export function useImport() {
     setImportServer(true);
     setOverwriteServer(false);
     setProxySelections([]);
+    setVisitorSelections([]);
     setParseError(null);
     setResult(null);
   }, []);
@@ -166,6 +213,7 @@ export function useImport() {
 
   // Derived: count selected proxies
   const selectedProxiesCount = proxySelections.filter((s) => s.import).length;
+  const selectedVisitorsCount = visitorSelections.filter((s) => s.import).length;
 
   return {
     step,
@@ -179,15 +227,19 @@ export function useImport() {
     overwriteServer,
     setOverwriteServer,
     proxySelections,
+    visitorSelections,
     parsing,
     importing,
     parseError,
     result,
     selectedProxiesCount,
+    selectedVisitorsCount,
     handleFileUpload,
     handleParse,
     updateProxySelection,
     selectAllProxies,
+    updateVisitorSelection,
+    selectAllVisitors,
     handleExecute,
     handleReset,
     goBack,
