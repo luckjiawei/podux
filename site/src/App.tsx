@@ -9,6 +9,12 @@ import { Loading } from "./components/Loading";
 const SetupPage = lazy(() => import("./pages/Setup").then((m) => ({ default: m.SetupPage })));
 const LoginPage = lazy(() => import("./pages/Login").then((m) => ({ default: m.LoginPage })));
 const ProxiesPage = lazy(() => import("./pages/Proxies").then((m) => ({ default: m.ProxiesPage })));
+const VisitorsPage = lazy(() =>
+  import("./pages/Visitors").then((m) => ({ default: m.VisitorsPage }))
+);
+const VisitorFormPage = lazy(() =>
+  import("./pages/Visitors/VisitorFormPage").then((m) => ({ default: m.VisitorFormPage }))
+);
 const ServersPage = lazy(() => import("./pages/Servers").then((m) => ({ default: m.ServersPage })));
 const DashboardPage = lazy(() =>
   import("./pages/Dashboard").then((m) => ({ default: m.DashboardPage }))
@@ -70,6 +76,9 @@ function App() {
             <Route path="/proxies" element={<ProxiesPage />} />
             <Route path="/proxies/new" element={<ProxyFormPage />} />
             <Route path="/proxies/:id/edit" element={<ProxyFormPage />} />
+            <Route path="/visitors" element={<VisitorsPage />} />
+            <Route path="/visitors/new" element={<VisitorFormPage />} />
+            <Route path="/visitors/:id/edit" element={<VisitorFormPage />} />
             <Route path="/servers" element={<ServersPage />} />
             <Route path="/servers/new" element={<ServerFormPage />} />
             <Route path="/servers/:id/edit" element={<ServerFormPage />} />

@@ -20,6 +20,7 @@ type tomlFrpClientConfig struct {
 	Transport  tomlTransportConfig `toml:"transport"`
 	Metadatas  map[string]string   `toml:"metadatas"`
 	Proxies    []tomlProxyConfig   `toml:"proxies"`
+	Visitors   []tomlVisitorConfig `toml:"visitors"`
 }
 
 type tomlAuthConfig struct {
@@ -56,6 +57,25 @@ type tomlProxyConfig struct {
 	Subdomain     string                 `toml:"subdomain"`
 	CustomDomains []string               `toml:"customDomains"`
 	Transport     map[string]interface{} `toml:"transport"`
+	SecretKey     string                 `toml:"secretKey"`
+	AllowUsers    []string               `toml:"allowUsers"`
+	NatTraversal  map[string]interface{} `toml:"natTraversal"`
+}
+
+type tomlVisitorConfig struct {
+	Name             string                 `toml:"name"`
+	Type             string                 `toml:"type"`
+	ServerUser       string                 `toml:"serverUser"`
+	ServerName       string                 `toml:"serverName"`
+	SecretKey        string                 `toml:"secretKey"`
+	BindAddr         string                 `toml:"bindAddr"`
+	BindPort         int                    `toml:"bindPort"`
+	Protocol         string                 `toml:"protocol"`
+	Transport        map[string]interface{} `toml:"transport"`
+	KeepTunnelOpen   bool                   `toml:"keepTunnelOpen"`
+	MaxRetriesAnHour int                    `toml:"maxRetriesAnHour"`
+	MinRetryInterval int                    `toml:"minRetryInterval"`
+	NatTraversal     map[string]interface{} `toml:"natTraversal"`
 }
 
 // ==================== API Data Types ====================
@@ -86,13 +106,34 @@ type ImportProxyInfo struct {
 	Subdomain     string                 `json:"subdomain"`
 	CustomDomains []string               `json:"customDomains"`
 	Transport     map[string]interface{} `json:"transport"`
+	SecretKey     string                 `json:"secretKey"`
+	AllowUsers    []string               `json:"allowUsers"`
+	NatTraversal  map[string]interface{} `json:"natTraversal"`
 	IsDuplicate   bool                   `json:"isDuplicate"`
 	ExistingId    string                 `json:"existingId"`
 }
 
+type ImportVisitorInfo struct {
+	Name             string                 `json:"name"`
+	Type             string                 `json:"type"`
+	ServerUser       string                 `json:"serverUser"`
+	ServerName       string                 `json:"serverName"`
+	BindAddr         string                 `json:"bindAddr"`
+	BindPort         int                    `json:"bindPort"`
+	Protocol         string                 `json:"protocol"`
+	Transport        map[string]interface{} `json:"transport"`
+	KeepTunnelOpen   bool                   `json:"keepTunnelOpen"`
+	MaxRetriesAnHour int                    `json:"maxRetriesAnHour"`
+	MinRetryInterval int                    `json:"minRetryInterval"`
+	NatTraversal     map[string]interface{} `json:"natTraversal"`
+	IsDuplicate      bool                   `json:"isDuplicate"`
+	ExistingId       string                 `json:"existingId"`
+}
+
 type ImportPreviewResponse struct {
-	Server  ImportServerInfo  `json:"server"`
-	Proxies []ImportProxyInfo `json:"proxies"`
+	Server   ImportServerInfo    `json:"server"`
+	Proxies  []ImportProxyInfo   `json:"proxies"`
+	Visitors []ImportVisitorInfo `json:"visitors"`
 }
 
 type ProxyImportOption struct {
@@ -107,12 +148,15 @@ type ExecuteImportRequest struct {
 	ImportServer    bool                `json:"importServer"`
 	OverwriteServer bool                `json:"overwriteServer"`
 	Proxies         []ProxyImportOption `json:"proxies"`
+	Visitors        []ProxyImportOption `json:"visitors"`
 }
 
 type ImportResult struct {
-	ServerImported  bool `json:"serverImported"`
-	ProxiesImported int  `json:"proxiesImported"`
-	ProxiesSkipped  int  `json:"proxiesSkipped"`
+	ServerImported   bool `json:"serverImported"`
+	ProxiesImported  int  `json:"proxiesImported"`
+	ProxiesSkipped   int  `json:"proxiesSkipped"`
+	VisitorsImported int  `json:"visitorsImported"`
+	VisitorsSkipped  int  `json:"visitorsSkipped"`
 }
 
 // ==================== Service ====================
@@ -236,6 +280,9 @@ func (s *Service) ParseToml(req *ParseTomlRequest) (*ImportPreviewResponse, erro
 			Subdomain:     p.Subdomain,
 			CustomDomains: customDomains,
 			Transport:     proxyTransport,
+			SecretKey:     p.SecretKey,
+			AllowUsers:    p.AllowUsers,
+			NatTraversal:  p.NatTraversal,
 		}
 
 		// Check proxy duplicate: only meaningful if server already exists
@@ -260,9 +307,37 @@ func (s *Service) ParseToml(req *ParseTomlRequest) (*ImportPreviewResponse, erro
 		proxies = append(proxies, proxyInfo)
 	}
 
+	visitors := make([]ImportVisitorInfo, 0, len(cfg.Visitors))
+	for _, v := range cfg.Visitors {
+		visitorType := v.Type
+		if visitorType == "" {
+			visitorType = "xtcp"
+		}
+		protocol := v.Protocol
+		if protocol == "" {
+			protocol = "quic"
+		}
+		bindAddr := v.BindAddr
+		if bindAddr == "" {
+			bindAddr = "127.0.0.1"
+		}
+		info := ImportVisitorInfo{Name: v.Name, Type: visitorType, ServerUser: v.ServerUser, ServerName: v.ServerName, BindAddr: bindAddr, BindPort: v.BindPort, Protocol: protocol, Transport: v.Transport, KeepTunnelOpen: v.KeepTunnelOpen, MaxRetriesAnHour: v.MaxRetriesAnHour, MinRetryInterval: v.MinRetryInterval, NatTraversal: v.NatTraversal}
+		if serverDuplicate && existingServerId != "" {
+			var row struct {
+				Id string `db:"id"`
+			}
+			if err := s.app.DB().Select("id").From("fh_visitors").Where(dbx.HashExp{"name": v.Name, "serverId": existingServerId}).One(&row); err == nil {
+				info.IsDuplicate = true
+				info.ExistingId = row.Id
+			}
+		}
+		visitors = append(visitors, info)
+	}
+
 	return &ImportPreviewResponse{
-		Server:  serverInfo,
-		Proxies: proxies,
+		Server:   serverInfo,
+		Proxies:  proxies,
+		Visitors: visitors,
 	}, nil
 }
 
@@ -287,7 +362,10 @@ func (s *Service) ExecuteImport(req *ExecuteImportRequest) (*ImportResult, error
 		if serverId == "" {
 			return nil
 		}
-		return s.handleProxyImport(txApp, &cfg, serverId, req.Proxies, result)
+		if err := s.handleProxyImport(txApp, &cfg, serverId, req.Proxies, result); err != nil {
+			return err
+		}
+		return s.handleVisitorImport(txApp, &cfg, serverId, req.Visitors, result)
 	})
 
 	if err != nil {
@@ -489,6 +567,11 @@ func (s *Service) handleProxyImport(
 		proxyRecord.Set("subdomain", p.Subdomain)
 		proxyRecord.Set("customDomains", string(customDomainsJSON))
 		proxyRecord.Set("transport", string(proxyTransportJSON))
+		proxyRecord.Set("secretKey", p.SecretKey)
+		allowUsersJSON, _ := json.Marshal(p.AllowUsers)
+		proxyRecord.Set("allowUsers", string(allowUsersJSON))
+		natTraversalJSON, _ := json.Marshal(p.NatTraversal)
+		proxyRecord.Set("natTraversal", string(natTraversalJSON))
 		proxyRecord.Set("status", "enabled")
 		proxyRecord.Set("bootStatus", "offline")
 		proxyRecord.Set("description", "")
@@ -499,5 +582,87 @@ func (s *Service) handleProxyImport(
 		result.ProxiesImported++
 	}
 
+	return nil
+}
+
+func (s *Service) handleVisitorImport(txApp core.App, cfg *tomlFrpClientConfig, serverId string, opts []ProxyImportOption, result *ImportResult) error {
+	optionMap := make(map[string]ProxyImportOption, len(opts))
+	for _, opt := range opts {
+		optionMap[opt.Name] = opt
+	}
+	collection, err := txApp.FindCollectionByNameOrId("fh_visitors")
+	if err != nil {
+		return fmt.Errorf("找不到访问端集合: %w", err)
+	}
+	for _, v := range cfg.Visitors {
+		opt, ok := optionMap[v.Name]
+		if !ok || !opt.Import {
+			result.VisitorsSkipped++
+			continue
+		}
+		var row struct {
+			Id string `db:"id"`
+		}
+		existsErr := txApp.DB().Select("id").From("fh_visitors").Where(dbx.HashExp{"name": v.Name, "serverId": serverId}).One(&row)
+		var record *core.Record
+		if existsErr == nil && opt.Overwrite {
+			record, err = txApp.FindRecordById(collection, row.Id)
+			if err != nil {
+				return err
+			}
+		} else if existsErr == nil {
+			result.VisitorsSkipped++
+			continue
+		} else {
+			record = core.NewRecord(collection)
+		}
+		visitorType := v.Type
+		if visitorType == "" {
+			visitorType = "xtcp"
+		}
+		if visitorType != "xtcp" {
+			result.VisitorsSkipped++
+			continue
+		}
+		protocol := v.Protocol
+		if protocol == "" {
+			protocol = "quic"
+		}
+		bindAddr := v.BindAddr
+		if bindAddr == "" {
+			bindAddr = "127.0.0.1"
+		}
+		maxRetries := v.MaxRetriesAnHour
+		if maxRetries == 0 {
+			maxRetries = 8
+		}
+		minRetry := v.MinRetryInterval
+		if minRetry == 0 {
+			minRetry = 90
+		}
+		transportJSON, _ := json.Marshal(v.Transport)
+		natJSON, _ := json.Marshal(v.NatTraversal)
+		record.Set("name", v.Name)
+		record.Set("visitorType", visitorType)
+		record.Set("serverId", serverId)
+		record.Set("targetProxyId", "")
+		record.Set("serverUser", v.ServerUser)
+		record.Set("serverName", v.ServerName)
+		record.Set("secretKey", v.SecretKey)
+		record.Set("bindAddr", bindAddr)
+		record.Set("bindPort", v.BindPort)
+		record.Set("protocol", protocol)
+		record.Set("transport", string(transportJSON))
+		record.Set("keepTunnelOpen", v.KeepTunnelOpen)
+		record.Set("maxRetriesAnHour", maxRetries)
+		record.Set("minRetryInterval", minRetry)
+		record.Set("natTraversal", string(natJSON))
+		record.Set("status", "enabled")
+		record.Set("description", "")
+		if err := txApp.Save(record); err != nil {
+			return fmt.Errorf("保存访问端 %s 失败: %w", v.Name, err)
+		}
+		result.VisitorsImported++
+	}
 	return nil
 }

@@ -18,6 +18,7 @@ import (
 
 	proxydomain "podux/internal/domain/proxy"
 	serverdomain "podux/internal/domain/server"
+	visitordomain "podux/internal/domain/visitor"
 	"podux/pkg/utils"
 
 	"github.com/fatedier/frp/client"
@@ -37,15 +38,36 @@ type Service struct {
 	statusMonitors map[string]context.CancelFunc
 	serverRepo     serverdomain.Repository
 	proxyRepo      proxydomain.Repository
+	visitorRepo    visitordomain.Repository
 }
 
-func NewService(app core.App, serverRepo serverdomain.Repository, proxyRepo proxydomain.Repository) *Service {
+func NewService(app core.App, serverRepo serverdomain.Repository, proxyRepo proxydomain.Repository, visitorRepo visitordomain.Repository) *Service {
 	return &Service{
 		app:            app,
 		processes:      make(map[string]*client.Service),
 		statusMonitors: make(map[string]context.CancelFunc),
 		serverRepo:     serverRepo,
 		proxyRepo:      proxyRepo,
+		visitorRepo:    visitorRepo,
+	}
+}
+
+func normalizeTransport(data map[string]interface{}) {
+	transport, ok := data["transport"].(map[string]interface{})
+	if !ok {
+		return
+	}
+	if value, exists := transport["use_encryption"]; exists {
+		if _, canonical := transport["useEncryption"]; !canonical {
+			transport["useEncryption"] = value
+		}
+		delete(transport, "use_encryption")
+	}
+	if value, exists := transport["use_compression"]; exists {
+		if _, canonical := transport["useCompression"]; !canonical {
+			transport["useCompression"] = value
+		}
+		delete(transport, "use_compression")
 	}
 }
 
@@ -167,9 +189,10 @@ func (fs *Service) genProxyCfgs(serverId *string) ([]v1.ProxyConfigurer, error) 
 			return nil, err
 		}
 
-		if proxyMap.ProxyType == "http" || proxyMap.ProxyType == "https" {
+		if proxyMap.ProxyType == "http" || proxyMap.ProxyType == "https" || proxyMap.ProxyType == "xtcp" {
 			delete(proxyData, "remotePort")
 		}
+		normalizeTransport(proxyData)
 		proxyData["type"] = proxyMap.ProxyType
 		delete(proxyData, "proxyType")
 		proxyData["name"] = proxyMap.Name + "-" + proxyMap.Id
@@ -186,35 +209,104 @@ func (fs *Service) genProxyCfgs(serverId *string) ([]v1.ProxyConfigurer, error) 
 			return nil, err
 		}
 
-		switch proxyMap.ProxyType {
-		case "tcp":
-			var tcpProxy v1.TCPProxyConfig
-			if err := json.Unmarshal(jsonData, &tcpProxy); err != nil {
-				return nil, err
-			}
-			proxyCfgs = append(proxyCfgs, &tcpProxy)
-		case "udp":
-			var udpProxy v1.UDPProxyConfig
-			if err := json.Unmarshal(jsonData, &udpProxy); err != nil {
-				return nil, err
-			}
-			proxyCfgs = append(proxyCfgs, &udpProxy)
-		case "http":
-			var httpProxy v1.HTTPProxyConfig
-			if err := json.Unmarshal(jsonData, &httpProxy); err != nil {
-				return nil, err
-			}
-			proxyCfgs = append(proxyCfgs, &httpProxy)
-		case "https":
-			var httpsProxy v1.HTTPSProxyConfig
-			if err := json.Unmarshal(jsonData, &httpsProxy); err != nil {
-				return nil, err
-			}
-			proxyCfgs = append(proxyCfgs, &httpsProxy)
+		configurer := v1.NewProxyConfigurerByType(v1.ProxyType(proxyMap.ProxyType))
+		if configurer == nil {
+			return nil, fmt.Errorf("unsupported proxy type %q", proxyMap.ProxyType)
 		}
+		if err := json.Unmarshal(jsonData, configurer); err != nil {
+			return nil, fmt.Errorf("decode proxy %q: %w", proxyMap.Name, err)
+		}
+		if proxyMap.ProxyType == "xtcp" && proxyMap.SecretKey == "" {
+			return nil, fmt.Errorf("xtcp proxy %q requires secretKey", proxyMap.Name)
+		}
+		configurer.Complete()
+		proxyCfgs = append(proxyCfgs, configurer)
 	}
 
 	return proxyCfgs, nil
+}
+
+func (fs *Service) genVisitorCfgs(serverId *string) ([]v1.VisitorConfigurer, error) {
+	visitors, err := fs.visitorRepo.FindEnabledByServerID(*serverId)
+	if err != nil {
+		return nil, err
+	}
+	ownerServer, err := fs.app.FindRecordById("fh_servers", *serverId)
+	if err != nil {
+		return nil, err
+	}
+
+	visitorCfgs := make([]v1.VisitorConfigurer, 0, len(visitors))
+	for _, visitor := range visitors {
+		dataBytes, err := json.Marshal(visitor)
+		if err != nil {
+			return nil, err
+		}
+		var data map[string]interface{}
+		if err := json.Unmarshal(dataBytes, &data); err != nil {
+			return nil, err
+		}
+
+		if visitor.TargetProxyId != "" {
+			target, err := fs.app.FindRecordById("fh_proxies", visitor.TargetProxyId)
+			if err != nil {
+				return nil, fmt.Errorf("managed target for visitor %q not found: %w", visitor.Name, err)
+			}
+			if target.GetString("proxyType") != "xtcp" {
+				return nil, fmt.Errorf("managed target for visitor %q is not xtcp", visitor.Name)
+			}
+			targetServer, err := fs.app.FindRecordById("fh_servers", target.GetString("serverId"))
+			if err != nil {
+				return nil, err
+			}
+			if ownerServer.GetString("serverAddr") != targetServer.GetString("serverAddr") || ownerServer.GetInt("serverPort") != targetServer.GetInt("serverPort") {
+				return nil, fmt.Errorf("managed target for visitor %q belongs to a different frps endpoint", visitor.Name)
+			}
+			data["serverName"] = target.GetString("name") + "-" + target.Id
+			data["serverUser"] = targetServer.GetString("user")
+			data["secretKey"] = target.GetString("secretKey")
+		}
+
+		configurer, err := buildVisitorConfigurer(visitor, data)
+		if err != nil {
+			return nil, err
+		}
+		visitorCfgs = append(visitorCfgs, configurer)
+	}
+	return visitorCfgs, nil
+}
+
+func buildVisitorConfigurer(visitor visitordomain.Visitor, data map[string]interface{}) (v1.VisitorConfigurer, error) {
+	serverName, _ := data["serverName"].(string)
+	secretKey, _ := data["secretKey"].(string)
+	if serverName == "" || secretKey == "" {
+		return nil, fmt.Errorf("xtcp visitor %q requires serverName and secretKey", visitor.Name)
+	}
+	if !visitor.BindPort.Valid || visitor.BindPort.Int == 0 {
+		return nil, fmt.Errorf("xtcp visitor %q requires a non-zero bindPort", visitor.Name)
+	}
+	if visitor.Protocol != "quic" && visitor.Protocol != "kcp" {
+		return nil, fmt.Errorf("xtcp visitor %q protocol must be quic or kcp", visitor.Name)
+	}
+
+	data["type"] = visitor.VisitorType
+	data["name"] = visitor.Name + "-" + visitor.Id
+	delete(data, "visitorType")
+	delete(data, "targetProxyId")
+	normalizeTransport(data)
+	dataBytes, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+	configurer := v1.NewVisitorConfigurerByType(v1.VisitorType(visitor.VisitorType))
+	if configurer == nil {
+		return nil, fmt.Errorf("unsupported visitor type %q", visitor.VisitorType)
+	}
+	if err := json.Unmarshal(dataBytes, configurer); err != nil {
+		return nil, fmt.Errorf("decode visitor %q: %w", visitor.Name, err)
+	}
+	configurer.Complete()
+	return configurer, nil
 }
 
 func handleTermSignal(svr *client.Service) {
@@ -235,23 +327,29 @@ func (fs *Service) LaunchFrpc(serverId *string) error {
 	if err != nil {
 		return err
 	}
+	visitorCfgs, err := fs.genVisitorCfgs(serverId)
+	if err != nil {
+		return err
+	}
 
 	fs.app.Logger().Debug("Config", "serverAddr", cfg.ServerAddr, "serverPort", cfg.ServerPort, "proxyCount", len(proxyCfgs))
 
 	// Print frp configurations in logs with sensitive data masked
 	commonCfgBytes, _ := json.Marshal(cfg)
 	proxyCfgsBytes, _ := json.Marshal(proxyCfgs)
+	visitorCfgsBytes, _ := json.Marshal(visitorCfgs)
 
 	safeCommon := sensitiveRegex.ReplaceAll(commonCfgBytes, []byte(`"${1}":"***"`))
 	safeProxies := sensitiveRegex.ReplaceAll(proxyCfgsBytes, []byte(`"${1}":"***"`))
+	safeVisitors := sensitiveRegex.ReplaceAll(visitorCfgsBytes, []byte(`"${1}":"***"`))
 
-	fs.app.Logger().Info("FRP Configuration", "common", string(safeCommon), "proxies", string(safeProxies))
+	fs.app.Logger().Info("FRP Configuration", "common", string(safeCommon), "proxies", string(safeProxies), "visitors", string(safeVisitors))
 
 	cfg.Complete()
 	log.InitLogger(cfg.Log.To, cfg.Log.Level, int(cfg.Log.MaxDays), cfg.Log.DisablePrintColor)
 
 	configSrc := frpcsource.NewConfigSource()
-	if err := configSrc.ReplaceAll(proxyCfgs, nil); err != nil {
+	if err := configSrc.ReplaceAll(proxyCfgs, visitorCfgs); err != nil {
 		return err
 	}
 	svr, err := client.NewService(client.ServiceOptions{
@@ -497,16 +595,21 @@ func (fs *Service) ReloadFrpc(serverId *string) error {
 	if err != nil {
 		return err
 	}
+	visitorCfgs, err := fs.genVisitorCfgs(serverId)
+	if err != nil {
+		return err
+	}
 
 	proxyCfgsBytes, _ := json.Marshal(proxyCfgs)
+	visitorCfgsBytes, _ := json.Marshal(visitorCfgs)
 	safeProxies := sensitiveRegex.ReplaceAll(proxyCfgsBytes, []byte(`"${1}":"***"`))
-	fs.app.Logger().Info("FRP Reload Configurations", "proxies", string(safeProxies))
+	safeVisitors := sensitiveRegex.ReplaceAll(visitorCfgsBytes, []byte(`"${1}":"***"`))
+	fs.app.Logger().Info("FRP Reload Configurations", "proxies", string(safeProxies), "visitors", string(safeVisitors))
 
 	fs.mu.RLock()
 	svr := fs.processes[*serverId]
 	fs.mu.RUnlock()
-	// TODO 2026-02-08 reload visitorCfgs
-	svr.UpdateAllConfigurer(proxyCfgs, nil)
+	svr.UpdateAllConfigurer(proxyCfgs, visitorCfgs)
 
 	return nil
 }
