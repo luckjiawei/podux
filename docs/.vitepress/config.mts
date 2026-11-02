@@ -8,7 +8,7 @@ export default defineConfig({
   head: [
     ['link', { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }],
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' }],
-    ['script', { defer: '', src: 'https://umami.jwinks.com/script.js', 'data-website-id': '8af0f36e-650c-45b5-a17e-e104b918f63f' }]
+    ['script', { defer: '', src: 'https://umami.jwinks.com:9443/script.js', 'data-website-id': '7a64c0ad-6d82-484c-88d3-5d9a6c2a1fff' }]
   ],
   metaChunk: true,
 
