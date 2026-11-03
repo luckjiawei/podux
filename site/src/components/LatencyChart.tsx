@@ -212,7 +212,7 @@ export function LatencyChart({ serverId }: LatencyChartProps) {
             style={{ position: "absolute", inset: 0 }}
           >
             <ResponsiveContainer width="100%" height={180}>
-              <AreaChart data={data} margin={{ top: 8, right: 4, left: -16, bottom: 0 }}>
+              <AreaChart data={data} margin={{ top: 8, right: 4, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="latencyGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="var(--green-9)" stopOpacity={0.28} />
@@ -235,7 +235,7 @@ export function LatencyChart({ serverId }: LatencyChartProps) {
                   tickLine={false}
                   axisLine={false}
                   tickFormatter={(v) => `${v}ms`}
-                  width={52}
+                  width="auto"
                 />
 
                 <Tooltip
