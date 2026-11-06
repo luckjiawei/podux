@@ -22,7 +22,11 @@ A: Podux supports hot reload. After saving changes in the web UI, the applicatio
 
 ### Q: Which proxy protocols are supported?
 
-A: **TCP**, **UDP**, **HTTP**, and **HTTPS** are fully supported. Advanced protocols such as **STCP** and **XTCP** are under development and will be available in future releases.
+A: **TCP**, **UDP**, **HTTP**, **HTTPS**, and **XTCP** are supported. XTCP includes both provider proxies and independently managed visitors. STCP and SUDP are not yet available.
+
+### Q: What is required for XTCP?
+
+A: The provider and visitor must connect to the same frps endpoint and both networks must allow outbound UDP traffic. XTCP relies on NAT traversal and may fail when either side is behind a restrictive or symmetric NAT. Podux supports QUIC and KCP XTCP tunnels, but does not currently provide an automatic STCP fallback.
 
 ## Troubleshooting
 

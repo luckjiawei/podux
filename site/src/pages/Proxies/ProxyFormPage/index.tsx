@@ -21,6 +21,7 @@ export function ProxyFormPage() {
       submitting={form.submitting}
       errors={form.errors}
       isHttpType={form.isHttpType}
+      isXtcpType={form.isXtcpType}
       isSocks5Plugin={form.isSocks5Plugin}
       mounted={mounted}
       onChange={form.handleChange}

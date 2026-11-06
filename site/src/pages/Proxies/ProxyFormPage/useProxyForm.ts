@@ -22,6 +22,9 @@ export interface ProxyFormData {
   pluginType: "socks5";
   pluginUsername: string;
   pluginPassword: string;
+  secretKey: string;
+  allowUsers: string[];
+  disableAssistedAddrs: boolean;
 }
 
 const DEFAULT_FORM: ProxyFormData = {
@@ -40,6 +43,9 @@ const DEFAULT_FORM: ProxyFormData = {
   pluginType: "socks5",
   pluginUsername: "",
   pluginPassword: "",
+  secretKey: "",
+  allowUsers: [],
+  disableAssistedAddrs: false,
 };
 
 export interface ServerOption {
@@ -102,13 +108,23 @@ export function useProxyForm() {
           remotePort: String(record.remotePort || ""),
           subdomain: (record.subdomain as string) || "",
           customDomains: (record.customDomains as string[] | undefined) || [],
-          encryption: (record.transport as Record<string, boolean> | undefined)?.use_encryption || false,
-          compression: (record.transport as Record<string, boolean> | undefined)?.use_compression || false,
+          encryption:
+            (record.transport as Record<string, boolean> | undefined)?.useEncryption ||
+            (record.transport as Record<string, boolean> | undefined)?.use_encryption ||
+            false,
+          compression:
+            (record.transport as Record<string, boolean> | undefined)?.useCompression ||
+            (record.transport as Record<string, boolean> | undefined)?.use_compression ||
+            false,
           description: (record.description as string) || "",
           pluginEnabled: !!plugin?.type,
           pluginType: (plugin?.type as ProxyFormData["pluginType"]) || "socks5",
           pluginUsername: plugin?.username || "",
           pluginPassword: plugin?.password || "",
+          secretKey: (record.secretKey as string) || "",
+          allowUsers: (record.allowUsers as string[] | undefined) || [],
+          disableAssistedAddrs: !!(record.natTraversal as Record<string, boolean> | undefined)
+            ?.disableAssistedAddrs,
         });
       } catch {
         toast.error("Failed to load proxy");
@@ -142,7 +158,12 @@ export function useProxyForm() {
   const handleChange = (field: keyof ProxyFormData, value: string | boolean | string[]) => {
     setFormData((prev) => {
       const next = { ...prev, [field]: value };
-      if (field === "type" && value !== "tcp" && prev.pluginEnabled && prev.pluginType === "socks5") {
+      if (
+        field === "type" &&
+        value !== "tcp" &&
+        prev.pluginEnabled &&
+        prev.pluginType === "socks5"
+      ) {
         next.pluginEnabled = false;
       }
       return next;
@@ -164,19 +185,25 @@ export function useProxyForm() {
 
     if (!isSocks5) {
       if (!data.localIp) newErrors.localIp = t("proxy.errorRequired");
-      else if (!REGEX.IP_OR_HOSTNAME.test(data.localIp)) newErrors.localIp = t("proxy.errorInvalidIP");
+      else if (!REGEX.IP_OR_HOSTNAME.test(data.localIp))
+        newErrors.localIp = t("proxy.errorInvalidIP");
 
       if (!data.localPort) newErrors.localPort = t("proxy.errorRequired");
       else if (!REGEX.PORT.test(data.localPort)) newErrors.localPort = t("proxy.errorInvalidPort");
     }
 
-    if (!isHttp && !isSocks5) {
+    if (!isHttp && data.type !== "xtcp" && !isSocks5) {
       if (!data.remotePort) newErrors.remotePort = t("proxy.errorRequired");
-      else if (!REGEX.PORT.test(data.remotePort)) newErrors.remotePort = t("proxy.errorInvalidPort");
+      else if (!REGEX.PORT.test(data.remotePort))
+        newErrors.remotePort = t("proxy.errorInvalidPort");
     }
 
     if (isHttp && !data.subdomain && data.customDomains.length === 0) {
       newErrors.subdomain = t("proxy.errorSubdomainRequired");
+    }
+
+    if (data.type === "xtcp" && !data.secretKey) {
+      newErrors.secretKey = t("proxy.errorRequired");
     }
 
     setErrors(newErrors);
@@ -188,10 +215,10 @@ export function useProxyForm() {
 
     const plugin = formData.pluginEnabled
       ? {
-        type: formData.pluginType,
-        ...(formData.pluginUsername ? { username: formData.pluginUsername } : {}),
-        ...(formData.pluginPassword ? { password: formData.pluginPassword } : {}),
-      }
+          type: formData.pluginType,
+          ...(formData.pluginUsername ? { username: formData.pluginUsername } : {}),
+          ...(formData.pluginPassword ? { password: formData.pluginPassword } : {}),
+        }
       : null;
 
     const payload = {
@@ -200,14 +227,18 @@ export function useProxyForm() {
       name: formData.name,
       localIP: formData.localIp,
       localPort: formData.localPort,
-      remotePort: formData.remotePort,
+      remotePort: formData.type === "xtcp" ? "" : formData.remotePort,
       subdomain: formData.subdomain,
       customDomains: formData.customDomains,
       transport: {
-        use_encryption: formData.encryption,
-        use_compression: formData.compression,
+        useEncryption: formData.encryption,
+        useCompression: formData.compression,
       },
       plugin,
+      secretKey: formData.type === "xtcp" ? formData.secretKey : "",
+      allowUsers: formData.type === "xtcp" ? formData.allowUsers.filter(Boolean) : [],
+      natTraversal:
+        formData.type === "xtcp" ? { disableAssistedAddrs: formData.disableAssistedAddrs } : {},
       description: formData.description,
       status: "enabled",
     };
@@ -230,6 +261,7 @@ export function useProxyForm() {
   };
 
   const isHttpType = formData.type === "http" || formData.type === "https";
+  const isXtcpType = formData.type === "xtcp";
   const isSocks5Plugin = formData.pluginEnabled && formData.pluginType === "socks5";
 
   return {
@@ -241,6 +273,7 @@ export function useProxyForm() {
     submitting,
     errors,
     isHttpType,
+    isXtcpType,
     isSocks5Plugin,
     handleChange,
     handleSubmit,

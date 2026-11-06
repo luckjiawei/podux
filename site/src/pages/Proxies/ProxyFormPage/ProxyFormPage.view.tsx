@@ -24,28 +24,69 @@ import { ServerLatency } from "../../../components/ServerLatency";
 import { type ProxyFormData, type ServerOption } from "./useProxyForm";
 
 const proxyTypes = [
-  { value: "tcp",    label: "TCP",    icon: "lucide:arrow-right-left", comingSoon: false },
-  { value: "udp",    label: "UDP",    icon: "lucide:radio",            comingSoon: false },
-  { value: "http",   label: "HTTP",   icon: "lucide:globe",            comingSoon: false },
-  { value: "https",  label: "HTTPS",  icon: "lucide:lock",             comingSoon: false },
-  { value: "tcpmux", label: "TCPMUX", icon: "lucide:split",            comingSoon: true  },
-  { value: "stcp",   label: "STCP",   icon: "lucide:shield",           comingSoon: true  },
-  { value: "sudp",   label: "SUDP",   icon: "lucide:shield-ellipsis",  comingSoon: true  },
-  { value: "xtcp",   label: "XTCP",   icon: "lucide:share-2",          comingSoon: true  },
+  { value: "tcp", label: "TCP", icon: "lucide:arrow-right-left", comingSoon: false },
+  { value: "udp", label: "UDP", icon: "lucide:radio", comingSoon: false },
+  { value: "http", label: "HTTP", icon: "lucide:globe", comingSoon: false },
+  { value: "https", label: "HTTPS", icon: "lucide:lock", comingSoon: false },
+  { value: "tcpmux", label: "TCPMUX", icon: "lucide:split", comingSoon: true },
+  { value: "stcp", label: "STCP", icon: "lucide:shield", comingSoon: true },
+  { value: "sudp", label: "SUDP", icon: "lucide:shield-ellipsis", comingSoon: true },
+  { value: "xtcp", label: "XTCP", icon: "lucide:share-2", comingSoon: false },
 ];
 
 const BASE_PLUGIN_TYPES = [
-  { value: "socks5",             label: "SOCKS5",           icon: "lucide:globe",         comingSoon: false, tcpOnly: true  },
-  { value: "http_proxy",         label: "HTTPProxy",         icon: "lucide:waypoints",     comingSoon: true,  tcpOnly: false },
-  { value: "static_file",        label: "StaticFile",        icon: "lucide:folder-open",   comingSoon: true,  tcpOnly: false },
-  { value: "unix_domain_socket", label: "UnixDomainSocket",  icon: "lucide:cable",         comingSoon: true,  tcpOnly: false },
-  { value: "http2https",         label: "HTTP2HTTPS",        icon: "lucide:lock",          comingSoon: true,  tcpOnly: false },
-  { value: "https2http",         label: "HTTPS2HTTP",        icon: "lucide:lock-open",     comingSoon: true,  tcpOnly: false },
-  { value: "https2https",        label: "HTTPS2HTTPS",       icon: "lucide:shield-check",  comingSoon: true,  tcpOnly: false },
-  { value: "tls2raw",            label: "TLS2Raw",           icon: "lucide:zap",           comingSoon: true,  tcpOnly: false },
-  { value: "virtual_net",        label: "VirtualNet",        icon: "lucide:network",       comingSoon: true,  tcpOnly: false },
+  { value: "socks5", label: "SOCKS5", icon: "lucide:globe", comingSoon: false, tcpOnly: true },
+  {
+    value: "http_proxy",
+    label: "HTTPProxy",
+    icon: "lucide:waypoints",
+    comingSoon: true,
+    tcpOnly: false,
+  },
+  {
+    value: "static_file",
+    label: "StaticFile",
+    icon: "lucide:folder-open",
+    comingSoon: true,
+    tcpOnly: false,
+  },
+  {
+    value: "unix_domain_socket",
+    label: "UnixDomainSocket",
+    icon: "lucide:cable",
+    comingSoon: true,
+    tcpOnly: false,
+  },
+  {
+    value: "http2https",
+    label: "HTTP2HTTPS",
+    icon: "lucide:lock",
+    comingSoon: true,
+    tcpOnly: false,
+  },
+  {
+    value: "https2http",
+    label: "HTTPS2HTTP",
+    icon: "lucide:lock-open",
+    comingSoon: true,
+    tcpOnly: false,
+  },
+  {
+    value: "https2https",
+    label: "HTTPS2HTTPS",
+    icon: "lucide:shield-check",
+    comingSoon: true,
+    tcpOnly: false,
+  },
+  { value: "tls2raw", label: "TLS2Raw", icon: "lucide:zap", comingSoon: true, tcpOnly: false },
+  {
+    value: "virtual_net",
+    label: "VirtualNet",
+    icon: "lucide:network",
+    comingSoon: true,
+    tcpOnly: false,
+  },
 ];
-
 
 interface ProxyFormPageViewProps {
   isEditing: boolean;
@@ -56,6 +97,7 @@ interface ProxyFormPageViewProps {
   submitting: boolean;
   errors: Partial<Record<keyof ProxyFormData, string>>;
   isHttpType: boolean;
+  isXtcpType: boolean;
   isSocks5Plugin: boolean;
   mounted: boolean;
   onChange: (field: keyof ProxyFormData, value: string | boolean | string[]) => void;
@@ -73,6 +115,7 @@ export function ProxyFormPageView({
   submitting,
   errors,
   isHttpType,
+  isXtcpType,
   isSocks5Plugin,
   mounted,
   onChange,
@@ -92,7 +135,7 @@ export function ProxyFormPageView({
   }
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col gap-5 overflow-hidden">
+    <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-hidden">
       <PageHeader
         title={isEditing ? t("proxy.editProxy") : t("proxy.addProxy")}
         description={isEditing ? t("proxy.updateProxyDesc") : t("proxy.addProxyDesc")}
@@ -103,17 +146,18 @@ export function ProxyFormPageView({
         initial={{ opacity: 0, y: 16 }}
         animate={mounted ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
         transition={{ duration: 0.4, delay: 0.1, ease: "easeOut" }}
-        className="flex-1 min-h-0 flex overflow-hidden"
+        className="flex min-h-0 flex-1 overflow-hidden"
       >
-        <div className="flex-1 min-h-0 flex gap-8">
+        <div className="flex min-h-0 flex-1 gap-8">
           {/* form */}
-          <div
-            ref={scrollContainerRef}
-            className="flex-1 min-w-0 min-h-0 overflow-y-auto pr-2"
-          >
+          <div ref={scrollContainerRef} className="min-h-0 min-w-0 flex-1 overflow-y-auto pr-2">
             <Flex direction="column" gap="8">
               <section>
-                <SectionHeading id="section-basic" title={t("proxy.sectionBasic")} icon="lucide:info" />
+                <SectionHeading
+                  id="section-basic"
+                  title={t("proxy.sectionBasic")}
+                  icon="lucide:info"
+                />
                 <Flex direction="column" gap="4">
                   <FormItem label={t("proxy.selectServer")} required>
                     <Select.Root
@@ -137,7 +181,9 @@ export function ProxyFormPageView({
                             <Flex align="center" gap="2">
                               <span
                                 className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${
-                                  s.bootStatus === "running" ? "bg-[var(--green-9)]" : "bg-[var(--gray-7)]"
+                                  s.bootStatus === "running"
+                                    ? "bg-[var(--green-9)]"
+                                    : "bg-[var(--gray-7)]"
                                 }`}
                               />
                               <Text size="2">{s.serverName}</Text>
@@ -159,7 +205,7 @@ export function ProxyFormPageView({
                               size="1"
                               variant="ghost"
                               color="orange"
-                              className="cursor-pointer shrink-0"
+                              className="shrink-0 cursor-pointer"
                               onClick={onNavigateToServers}
                             >
                               {t("proxy.goAddServer")}
@@ -196,7 +242,11 @@ export function ProxyFormPageView({
 
               {/* 网络配置 */}
               <section>
-                <SectionHeading id="section-network" title={t("proxy.sectionNetwork")} icon="lucide:network" />
+                <SectionHeading
+                  id="section-network"
+                  title={t("proxy.sectionNetwork")}
+                  icon="lucide:network"
+                />
                 <Flex direction="column" gap="4">
                   <AnimatePresence>
                     {!isSocks5Plugin && (
@@ -210,7 +260,11 @@ export function ProxyFormPageView({
                       >
                         <Flex gap="3">
                           <Box className="flex-[2]">
-                            <FormItem label={t("proxy.localAddress")} required error={errors.localIp}>
+                            <FormItem
+                              label={t("proxy.localAddress")}
+                              required
+                              error={errors.localIp}
+                            >
                               <TextField.Root
                                 size="2"
                                 placeholder={t("proxy.localAddressPlaceholder")}
@@ -221,7 +275,11 @@ export function ProxyFormPageView({
                             </FormItem>
                           </Box>
                           <Box className="flex-1">
-                            <FormItem label={t("proxy.localPort")} required error={errors.localPort}>
+                            <FormItem
+                              label={t("proxy.localPort")}
+                              required
+                              error={errors.localPort}
+                            >
                               <TextField.Root
                                 size="2"
                                 placeholder={t("proxy.localPortPlaceholder")}
@@ -272,7 +330,9 @@ export function ProxyFormPageView({
                             type="button"
                             size="2"
                             variant="soft"
-                            onClick={() => onChange("customDomains", [...formData.customDomains, ""])}
+                            onClick={() =>
+                              onChange("customDomains", [...formData.customDomains, ""])
+                            }
                           >
                             <Icon icon="lucide:plus" />
                             {t("proxy.addCustomDomain")}
@@ -291,7 +351,7 @@ export function ProxyFormPageView({
                         </Text>
                       </FormItem>
                     </>
-                  ) : (
+                  ) : !isXtcpType ? (
                     <FormItem label={t("proxy.remotePortLabel")} required error={errors.remotePort}>
                       <TextField.Root
                         size="2"
@@ -305,6 +365,55 @@ export function ProxyFormPageView({
                         {t("proxy.remotePortDesc")}
                       </Text>
                     </FormItem>
+                  ) : null}
+
+                  {isXtcpType && (
+                    <Flex
+                      direction="column"
+                      gap="4"
+                      className="rounded-md border border-[var(--gray-6)] p-4"
+                    >
+                      <FormItem label={t("proxy.xtcpSecretKey")} required error={errors.secretKey}>
+                        <TextField.Root
+                          size="2"
+                          type="password"
+                          value={formData.secretKey}
+                          onChange={(e) => onChange("secretKey", e.target.value)}
+                          placeholder={t("proxy.xtcpSecretKeyPlaceholder")}
+                          autoComplete="new-password"
+                        />
+                      </FormItem>
+                      <FormItem label={t("proxy.xtcpAllowUsers")}>
+                        <TextField.Root
+                          size="2"
+                          value={formData.allowUsers.join(", ")}
+                          onChange={(e) =>
+                            onChange(
+                              "allowUsers",
+                              e.target.value.split(",").map((v) => v.trim())
+                            )
+                          }
+                          placeholder={t("proxy.xtcpAllowUsersPlaceholder")}
+                        />
+                        <Text size="1" color="gray" mt="1">
+                          {t("proxy.xtcpAllowUsersDesc")}
+                        </Text>
+                      </FormItem>
+                      <Flex justify="between" align="center">
+                        <Box>
+                          <Text size="2" weight="medium">
+                            {t("proxy.xtcpDisableAssisted")}
+                          </Text>
+                          <Text as="p" size="1" color="gray">
+                            {t("proxy.xtcpDisableAssistedDesc")}
+                          </Text>
+                        </Box>
+                        <Switch
+                          checked={formData.disableAssistedAddrs}
+                          onCheckedChange={(v) => onChange("disableAssistedAddrs", v)}
+                        />
+                      </Flex>
+                    </Flex>
                   )}
                 </Flex>
               </section>
@@ -313,12 +422,20 @@ export function ProxyFormPageView({
 
               {/* 传输选项 */}
               <section>
-                <SectionHeading id="section-transport" title={t("proxy.sectionTransport")} icon="lucide:shield" />
+                <SectionHeading
+                  id="section-transport"
+                  title={t("proxy.sectionTransport")}
+                  icon="lucide:shield"
+                />
                 <Flex direction="column" gap="3">
                   <Flex justify="between" align="center">
                     <Box>
-                      <Text size="2" weight="medium">{t("proxy.transportEncryption")}</Text>
-                      <Text as="p" size="1" color="gray">{t("proxy.transportEncryptionDesc")}</Text>
+                      <Text size="2" weight="medium">
+                        {t("proxy.transportEncryption")}
+                      </Text>
+                      <Text as="p" size="1" color="gray">
+                        {t("proxy.transportEncryptionDesc")}
+                      </Text>
                     </Box>
                     <Switch
                       size="2"
@@ -329,8 +446,12 @@ export function ProxyFormPageView({
                   <Separator size="4" />
                   <Flex justify="between" align="center">
                     <Box>
-                      <Text size="2" weight="medium">{t("proxy.dataCompression")}</Text>
-                      <Text as="p" size="1" color="gray">{t("proxy.dataCompressionDesc")}</Text>
+                      <Text size="2" weight="medium">
+                        {t("proxy.dataCompression")}
+                      </Text>
+                      <Text as="p" size="1" color="gray">
+                        {t("proxy.dataCompressionDesc")}
+                      </Text>
                     </Box>
                     <Switch
                       size="2"
@@ -341,86 +462,108 @@ export function ProxyFormPageView({
                 </Flex>
               </section>
 
-              <Separator size="4" />
+              {!isXtcpType && (
+                <>
+                  <Separator size="4" />
 
-              {/* 插件 */}
-              <section>
-                <SectionHeading id="section-plugin" title={t("proxy.sectionPlugin")} icon="lucide:puzzle" />
-                <Flex direction="column" gap="4">
-                  <Flex justify="between" align="center">
-                    <Box>
-                      <Text size="2" weight="medium">{t("proxy.pluginEnable")}</Text>
-                      <Text as="p" size="1" color="gray">{t("proxy.pluginEnableDesc")}</Text>
-                    </Box>
-                    <Switch
-                      size="2"
-                      checked={formData.pluginEnabled}
-                      onCheckedChange={(v) => onChange("pluginEnabled", v)}
+                  {/* 插件 */}
+                  <section>
+                    <SectionHeading
+                      id="section-plugin"
+                      title={t("proxy.sectionPlugin")}
+                      icon="lucide:puzzle"
                     />
-                  </Flex>
-
-                  <AnimatePresence>
-                  {formData.pluginEnabled && (
-                    <motion.div
-                      key="plugin-fields"
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.2, ease: "easeInOut" }}
-                      style={{ overflow: "hidden" }}
-                    >
-                    <Flex
-                      direction="column"
-                      gap="4"
-                      className="border-l-2 border-[var(--accent-6)] pl-4"
-                    >
-                      <FormItem label={t("proxy.pluginType")} required>
-                        <RadioCardGroup
-                          options={BASE_PLUGIN_TYPES.map((pt) => ({
-                            ...pt,
-                            incompatible: pt.tcpOnly && formData.type !== "tcp",
-                            incompatibleLabel: t("proxy.pluginTcpOnly"),
-                          }))}
-                          value={formData.pluginType}
-                          onChange={(v) => onChange("pluginType", v as ProxyFormData["pluginType"])}
-                          comingSoonLabel={t("common.comingSoon")}
-                        />
-                      </FormItem>
-
-                      <FormItem label={t("proxy.pluginUsername")}>
-                        <TextField.Root
+                    <Flex direction="column" gap="4">
+                      <Flex justify="between" align="center">
+                        <Box>
+                          <Text size="2" weight="medium">
+                            {t("proxy.pluginEnable")}
+                          </Text>
+                          <Text as="p" size="1" color="gray">
+                            {t("proxy.pluginEnableDesc")}
+                          </Text>
+                        </Box>
+                        <Switch
                           size="2"
-                          placeholder={t("proxy.pluginUsernamePlaceholder")}
-                          value={formData.pluginUsername}
-                          onChange={(e) => onChange("pluginUsername", e.target.value)}
-                          autoComplete="off"
+                          checked={formData.pluginEnabled}
+                          onCheckedChange={(v) => onChange("pluginEnabled", v)}
                         />
-                        <Text size="1" color="gray" mt="1">{t("proxy.pluginUsernameDesc")}</Text>
-                      </FormItem>
+                      </Flex>
 
-                      <FormItem label={t("proxy.pluginPassword")}>
-                        <TextField.Root
-                          size="2"
-                          type="password"
-                          placeholder={t("proxy.pluginPasswordPlaceholder")}
-                          value={formData.pluginPassword}
-                          onChange={(e) => onChange("pluginPassword", e.target.value)}
-                          autoComplete="new-password"
-                        />
-                        <Text size="1" color="gray" mt="1">{t("proxy.pluginPasswordDesc")}</Text>
-                      </FormItem>
+                      <AnimatePresence>
+                        {formData.pluginEnabled && (
+                          <motion.div
+                            key="plugin-fields"
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.2, ease: "easeInOut" }}
+                            style={{ overflow: "hidden" }}
+                          >
+                            <Flex
+                              direction="column"
+                              gap="4"
+                              className="border-l-2 border-[var(--accent-6)] pl-4"
+                            >
+                              <FormItem label={t("proxy.pluginType")} required>
+                                <RadioCardGroup
+                                  options={BASE_PLUGIN_TYPES.map((pt) => ({
+                                    ...pt,
+                                    incompatible: pt.tcpOnly && formData.type !== "tcp",
+                                    incompatibleLabel: t("proxy.pluginTcpOnly"),
+                                  }))}
+                                  value={formData.pluginType}
+                                  onChange={(v) =>
+                                    onChange("pluginType", v as ProxyFormData["pluginType"])
+                                  }
+                                  comingSoonLabel={t("common.comingSoon")}
+                                />
+                              </FormItem>
+
+                              <FormItem label={t("proxy.pluginUsername")}>
+                                <TextField.Root
+                                  size="2"
+                                  placeholder={t("proxy.pluginUsernamePlaceholder")}
+                                  value={formData.pluginUsername}
+                                  onChange={(e) => onChange("pluginUsername", e.target.value)}
+                                  autoComplete="off"
+                                />
+                                <Text size="1" color="gray" mt="1">
+                                  {t("proxy.pluginUsernameDesc")}
+                                </Text>
+                              </FormItem>
+
+                              <FormItem label={t("proxy.pluginPassword")}>
+                                <TextField.Root
+                                  size="2"
+                                  type="password"
+                                  placeholder={t("proxy.pluginPasswordPlaceholder")}
+                                  value={formData.pluginPassword}
+                                  onChange={(e) => onChange("pluginPassword", e.target.value)}
+                                  autoComplete="new-password"
+                                />
+                                <Text size="1" color="gray" mt="1">
+                                  {t("proxy.pluginPasswordDesc")}
+                                </Text>
+                              </FormItem>
+                            </Flex>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </Flex>
-                    </motion.div>
-                  )}
-                  </AnimatePresence>
-                </Flex>
-              </section>
+                  </section>
+                </>
+              )}
 
               <Separator size="4" />
 
               {/* 描述 */}
               <section>
-                <SectionHeading id="section-description" title={t("proxy.descriptionLabel")} icon="lucide:file-text" />
+                <SectionHeading
+                  id="section-description"
+                  title={t("proxy.descriptionLabel")}
+                  icon="lucide:file-text"
+                />
                 <TextArea
                   size="2"
                   placeholder={t("proxy.descriptionPlaceholder")}
@@ -440,7 +583,7 @@ export function ProxyFormPageView({
                   size="2"
                   disabled={submitting}
                   onClick={onSubmit}
-                  className="[background:linear-gradient(135deg,var(--accent-9)_0%,var(--accent-10)_100%)] text-white"
+                  className="text-white [background:linear-gradient(135deg,var(--accent-9)_0%,var(--accent-10)_100%)]"
                 >
                   {submitting ? (
                     <Spinner size="1" />
@@ -450,13 +593,16 @@ export function ProxyFormPageView({
                     <Icon icon="lucide:plus" width="16" height="16" />
                   )}
                   {submitting
-                    ? isEditing ? t("proxy.saving") : t("proxy.adding")
-                    : isEditing ? t("proxy.saveChanges") : t("proxy.addProxy")}
+                    ? isEditing
+                      ? t("proxy.saving")
+                      : t("proxy.adding")
+                    : isEditing
+                      ? t("proxy.saveChanges")
+                      : t("proxy.addProxy")}
                 </Button>
               </Flex>
             </Flex>
           </div>
-
         </div>
       </motion.div>
     </div>

@@ -38,11 +38,12 @@ func main() {
 	// Infrastructure (Repository implementations)
 	serverRepo := persistence.NewServerRepository(app)
 	proxyRepo := persistence.NewProxyRepository(app)
+	visitorRepo := persistence.NewVisitorRepository(app)
 
 	// Application Services
 	serverService := server.NewService(app, serverRepo)
 	proxyService := proxy.NewService(app, proxyRepo)
-	frpcService := frpc.NewService(app, serverRepo, proxyRepo)
+	frpcService := frpc.NewService(app, serverRepo, proxyRepo, visitorRepo)
 	dashboardService := dashboard.NewService(app, serverService, proxyService)
 	settingsService := system.NewService(app)
 	geoService := monitoring.NewGeoService(app)
@@ -62,19 +63,62 @@ func main() {
 	importHandler := httphandler.NewImportHandler(app, importService)
 	serverHandler := httphandler.NewServerHandler(app, metricsService)
 
-	// Hook: Reload frpc when proxy is updated
+	reloadServer := func(serverId, reason string) {
+		if serverId == "" || !frpcService.IsServerRunning(serverId) {
+			return
+		}
+		app.Logger().Info("Reloading frpc configuration", "serverId", serverId, "reason", reason)
+		if err := frpcService.ReloadFrpc(&serverId); err != nil {
+			app.Logger().Error("Failed to reload frpc configuration", "error", err, "serverId", serverId, "reason", reason)
+		}
+	}
+	reloadProxyAndDependents := func(record *core.Record, reason string) {
+		reloadServer(record.GetString("serverId"), reason)
+		serverIds, err := visitorRepo.FindServerIDsByTargetProxyID(record.Id)
+		if err != nil {
+			app.Logger().Error("Failed to find visitor dependencies", "proxyId", record.Id, "error", err)
+			return
+		}
+		for _, serverId := range serverIds {
+			reloadServer(serverId, "managed target "+reason)
+		}
+	}
+
+	app.OnRecordAfterCreateSuccess("fh_proxies").BindFunc(func(e *core.RecordEvent) error {
+		reloadProxyAndDependents(e.Record, "proxy created")
+		return e.Next()
+	})
 	app.OnRecordAfterUpdateSuccess("fh_proxies").BindFunc(func(e *core.RecordEvent) error {
-		serverId := e.Record.GetString("serverId")
-		if serverId != "" {
-			// Check if the server is currently running
-			if frpcService.IsServerRunning(serverId) {
-				app.Logger().Info("Proxy updated, reloading frpc configuration", "proxyId", e.Record.Id, "serverId", serverId)
-				if err := frpcService.ReloadFrpc(&serverId); err != nil {
-					app.Logger().Error("Failed to reload frpc after proxy update", "error", err, "serverId", serverId)
-				}
-			}
+		reloadProxyAndDependents(e.Record, "proxy updated")
+		return e.Next()
+	})
+	app.OnRecordAfterDeleteSuccess("fh_proxies").BindFunc(func(e *core.RecordEvent) error {
+		reloadProxyAndDependents(e.Record, "proxy deleted")
+		return e.Next()
+	})
+	app.OnRecordDeleteRequest("fh_proxies").BindFunc(func(e *core.RecordRequestEvent) error {
+		count, err := visitorRepo.CountByTargetProxyID(e.Record.Id)
+		if err != nil {
+			return err
+		}
+		if count > 0 {
+			return apis.NewBadRequestError("This XTCP proxy is referenced by one or more visitors", nil)
 		}
 		return e.Next()
+	})
+
+	reloadVisitor := func(e *core.RecordEvent, reason string) error {
+		reloadServer(e.Record.GetString("serverId"), reason)
+		return e.Next()
+	}
+	app.OnRecordAfterCreateSuccess("fh_visitors").BindFunc(func(e *core.RecordEvent) error {
+		return reloadVisitor(e, "visitor created")
+	})
+	app.OnRecordAfterUpdateSuccess("fh_visitors").BindFunc(func(e *core.RecordEvent) error {
+		return reloadVisitor(e, "visitor updated")
+	})
+	app.OnRecordAfterDeleteSuccess("fh_visitors").BindFunc(func(e *core.RecordEvent) error {
+		return reloadVisitor(e, "visitor deleted")
 	})
 
 	// register custom routes

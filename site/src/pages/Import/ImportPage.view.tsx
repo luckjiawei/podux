@@ -90,13 +90,13 @@ function StepIndicator({ current }: { current: number }) {
 // Step 1: Input TOML
 // ────────────────────────────────────────────────────────────
 function Step1({
-                 tomlContent,
-                 setTomlContent,
-                 parseError,
-                 parsing,
-                 handleFileUpload,
-                 handleParse,
-               }: Pick<
+  tomlContent,
+  setTomlContent,
+  parseError,
+  parsing,
+  handleFileUpload,
+  handleParse,
+}: Pick<
   ImportViewProps,
   "tomlContent" | "setTomlContent" | "parseError" | "parsing" | "handleFileUpload" | "handleParse"
 >) {
@@ -169,21 +169,25 @@ function Step1({
 // Step 2: Preview
 // ────────────────────────────────────────────────────────────
 function Step2({
-                 preview,
-                 serverName,
-                 setServerName,
-                 importServer,
-                 setImportServer,
-                 overwriteServer,
-                 setOverwriteServer,
-                 proxySelections,
-                 updateProxySelection,
-                 selectAllProxies,
-                 selectedProxiesCount,
-                 importing,
-                 handleExecute,
-                 goBack,
-               }: Pick<
+  preview,
+  serverName,
+  setServerName,
+  importServer,
+  setImportServer,
+  overwriteServer,
+  setOverwriteServer,
+  proxySelections,
+  updateProxySelection,
+  selectAllProxies,
+  selectedProxiesCount,
+  visitorSelections,
+  updateVisitorSelection,
+  selectAllVisitors,
+  selectedVisitorsCount,
+  importing,
+  handleExecute,
+  goBack,
+}: Pick<
   ImportViewProps,
   | "preview"
   | "serverName"
@@ -196,6 +200,10 @@ function Step2({
   | "updateProxySelection"
   | "selectAllProxies"
   | "selectedProxiesCount"
+  | "visitorSelections"
+  | "updateVisitorSelection"
+  | "selectAllVisitors"
+  | "selectedVisitorsCount"
   | "importing"
   | "handleExecute"
   | "goBack"
@@ -344,7 +352,7 @@ function Step2({
                         {tls?.enable ? t("server.enabled") : t("server.disabled")}
                       </Badge>
                     </Box>
-                    {(tls?.enable && tls?.serverName) ? (
+                    {tls?.enable && tls?.serverName ? (
                       <Box style={{ flex: 1 }}>
                         <Text size="1" color="gray" mb="1" as="div">
                           {t("server.serverNameSNI")}
@@ -353,7 +361,9 @@ function Step2({
                           {tls.serverName as string}
                         </Text>
                       </Box>
-                    ) : (<div></div>)}
+                    ) : (
+                      <div></div>
+                    )}
                   </Flex>
                 </Flex>
               </Tabs.Content>
@@ -536,6 +546,98 @@ function Step2({
         </Flex>
       </Card>
 
+      {/* ── Visitor Section ── */}
+      <Card>
+        <Flex direction="column" gap="3">
+          <Flex align="center" justify="between">
+            <Flex align="center" gap="2">
+              <Icon icon="lucide:waypoints" width="18" height="18" color="var(--accent-9)" />
+              <Text size="3" weight="bold">
+                {t("import.visitorSection")}
+              </Text>
+              <Badge variant="surface" size="1">
+                {preview.visitors?.length || 0}
+              </Badge>
+            </Flex>
+            <Flex gap="2">
+              <Button size="1" variant="soft" onClick={() => selectAllVisitors(true)}>
+                {t("import.selectAll")}
+              </Button>
+              <Button size="1" variant="soft" color="gray" onClick={() => selectAllVisitors(false)}>
+                {t("import.deselectAll")}
+              </Button>
+            </Flex>
+          </Flex>
+          <Separator size="4" />
+          {!preview.visitors?.length ? (
+            <Text size="2" color="gray" align="center" as="div" style={{ padding: "0.75rem 0" }}>
+              {t("import.noVisitors")}
+            </Text>
+          ) : (
+            <Table.Root variant="surface">
+              <Table.Header>
+                <Table.Row>
+                  <Table.ColumnHeaderCell width="40px" />
+                  <Table.ColumnHeaderCell>{t("common.name")}</Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell>{t("visitor.target")}</Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell>{t("visitor.localEndpoint")}</Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell>{t("visitor.protocol")}</Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell>{t("import.overwrite")}</Table.ColumnHeaderCell>
+                </Table.Row>
+              </Table.Header>
+              <Table.Body>
+                {preview.visitors.map((visitor) => {
+                  const selection = visitorSelections.find((s) => s.name === visitor.name);
+                  const selected = selection?.import ?? true;
+                  return (
+                    <Table.Row key={visitor.name} style={{ opacity: selected ? 1 : 0.45 }}>
+                      <Table.Cell>
+                        <Checkbox
+                          checked={selected}
+                          onCheckedChange={(v) =>
+                            updateVisitorSelection(visitor.name, "import", v === true)
+                          }
+                        />
+                      </Table.Cell>
+                      <Table.Cell>{visitor.name}</Table.Cell>
+                      <Table.Cell>
+                        {visitor.serverUser
+                          ? `${visitor.serverUser}.${visitor.serverName}`
+                          : visitor.serverName}
+                      </Table.Cell>
+                      <Table.Cell>
+                        {visitor.bindAddr || "127.0.0.1"}:{visitor.bindPort}
+                      </Table.Cell>
+                      <Table.Cell>
+                        <Badge variant="surface">{visitor.protocol || "quic"}</Badge>
+                      </Table.Cell>
+                      <Table.Cell>
+                        {visitor.isDuplicate && selected ? (
+                          <Switch
+                            size="1"
+                            checked={selection?.overwrite || false}
+                            onCheckedChange={(v) =>
+                              updateVisitorSelection(visitor.name, "overwrite", v)
+                            }
+                          />
+                        ) : (
+                          <Text color="gray">—</Text>
+                        )}
+                      </Table.Cell>
+                    </Table.Row>
+                  );
+                })}
+              </Table.Body>
+            </Table.Root>
+          )}
+          <Flex justify="end">
+            <Text size="1" color="gray">
+              {t("import.selectedCount", { count: selectedVisitorsCount })}
+            </Text>
+          </Flex>
+        </Flex>
+      </Card>
+
       {/* ── Actions ── */}
       <Flex justify="between">
         <Button variant="soft" color="gray" size="2" onClick={goBack}>
@@ -545,7 +647,10 @@ function Step2({
         <Button
           size="2"
           onClick={handleExecute}
-          disabled={importing || (!importServer && selectedProxiesCount === 0)}
+          disabled={
+            importing ||
+            (!importServer && selectedProxiesCount === 0 && selectedVisitorsCount === 0)
+          }
           style={{
             background: "linear-gradient(135deg, var(--accent-9) 0%, var(--accent-10) 100%)",
             color: "white",
@@ -603,6 +708,24 @@ function Step3({ result, handleReset }: Pick<ImportViewProps, "result" | "handle
             </Flex>
             <Badge color={result.serverImported ? "green" : "gray"} variant="soft">
               {result.serverImported ? t("import.imported") : t("import.skipped")}
+            </Badge>
+          </Flex>
+          <Flex justify="between" align="center">
+            <Flex align="center" gap="2">
+              <Icon icon="lucide:waypoints" width="16" height="16" color="var(--gray-9)" />
+              <Text size="2">{t("import.visitorsImported")}</Text>
+            </Flex>
+            <Badge color="green" variant="soft">
+              {result.visitorsImported}
+            </Badge>
+          </Flex>
+          <Flex justify="between" align="center">
+            <Flex align="center" gap="2">
+              <Icon icon="lucide:skip-forward" width="16" height="16" color="var(--gray-9)" />
+              <Text size="2">{t("import.visitorsSkipped")}</Text>
+            </Flex>
+            <Badge color="gray" variant="soft">
+              {result.visitorsSkipped}
             </Badge>
           </Flex>
           <Separator size="4" />
@@ -696,6 +819,10 @@ export function ImportPageView(props: ImportViewProps) {
                 updateProxySelection={props.updateProxySelection}
                 selectAllProxies={props.selectAllProxies}
                 selectedProxiesCount={props.selectedProxiesCount}
+                visitorSelections={props.visitorSelections}
+                updateVisitorSelection={props.updateVisitorSelection}
+                selectAllVisitors={props.selectAllVisitors}
+                selectedVisitorsCount={props.selectedVisitorsCount}
                 importing={props.importing}
                 handleExecute={props.handleExecute}
                 goBack={props.goBack}
